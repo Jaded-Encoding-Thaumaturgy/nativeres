@@ -68,7 +68,7 @@ jobs:
         run: git checkout --detach "refs/tags/${{ matrix.tag }}"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -83,7 +83,7 @@ jobs:
 
       - name: Upload dist/ files to GitHub Release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/*.tar.gz
