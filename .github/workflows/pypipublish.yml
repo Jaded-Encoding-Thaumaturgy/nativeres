@@ -68,7 +68,7 @@ jobs:
         run: git checkout --detach "refs/tags/${{ matrix.tag }}"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
