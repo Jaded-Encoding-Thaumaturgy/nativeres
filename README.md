@@ -39,7 +39,7 @@ This repository also contains a **[VSView](https://github.com/Jaded-Encoding-Tha
 ```bash
 pip install nativeres[plugin]
 # Or with uv
-uv tool install nativeres[plugin]
+uv add nativeres[plugin]
 ```
 
 The plugin registers as a VSView tool panel and tool dock under `Native Resolution`.
