@@ -32,7 +32,7 @@ classifiers = [
 dependencies = [
     "vsjetengine>=1.2.0",
     "vapoursynth>=75",
-    "vsjetpack[source]>=1.5.0",
+    "vsjetpack[source,kernels]>=1.5.0",
     "typer>=0.24.0",
     "rich>=15.0.0",
     "pyside6>=6.11.0",
@@ -60,7 +60,7 @@ dev = [
     "pydocstyle>=6.3.0",
     "ruff>=0.15.0, <0.16.0",
     "scipy-stubs>=1.16.0.0",
-    "vsstubs>=1.5.0",
+    "vsstubs>=2.0.0",
 ]
 
 [tool.hatch.version]

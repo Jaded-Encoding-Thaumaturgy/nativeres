@@ -1,6 +1,5 @@
-from click import BadParameter
 from jetpytools import SPath
-from typer import Argument, Option, Typer
+from typer import Argument, BadParameter, Option, Typer
 from vsmasktools import EdgeDetect
 
 from ..funcs import resolve_kernel
