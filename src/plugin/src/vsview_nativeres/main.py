@@ -244,8 +244,8 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             QSignalBlocker(self.kernels_cb),
             QSignalBlocker(self.metrics_cb),
         ):
-            self.range_min_spin.setValue(int(self.api.current_voutput.vs_output.clip.height * 0.465))
-            self.range_max_spin.setValue(int(self.api.current_voutput.vs_output.clip.height * 0.925))
+            self.range_min_spin.setValue(int(self.api.current_voutput.vs_output.clip.height * LOW_RATE))
+            self.range_max_spin.setValue(int(self.api.current_voutput.vs_output.clip.height * HIGH_RATE))
             self.step_spin.setValue(fallback(self.settings.local_.getnative.last_step, 1.0))
             for k in self.settings.global_.kernels:
                 self.kernels_cb.addItem(k.pretty_string, k)
