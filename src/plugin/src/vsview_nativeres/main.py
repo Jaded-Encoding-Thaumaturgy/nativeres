@@ -395,7 +395,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
                 self.calculate_btn.setEnabled(True)
                 return
 
-        match dim_mode := self.dimension.index:
+        match self.dimension.index:
             case 1:
                 dimensions = zip_longest([clip.width], dims, fillvalue=clip.width)
                 dim_mode = "Height"
