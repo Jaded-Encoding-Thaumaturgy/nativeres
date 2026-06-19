@@ -4,9 +4,10 @@ import sys
 import warnings
 from itertools import zip_longest
 from logging import INFO, basicConfig, captureWarnings, getLogger
+from math import ceil
 from typing import Annotated, Any, Literal, assert_never, cast
 
-from jetpytools import SPath
+from jetpytools import SPath, mod2
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.pretty import pretty_repr
@@ -23,6 +24,7 @@ from ..kernels import default_kernels
 from .components import (
     app,
     base_dim_opt,
+    base_parity_opt,
     crop_opt,
     cull_rate_opt,
     debug_opt,
@@ -81,6 +83,7 @@ def getnative(
     kernel: Annotated[ComplexKernel, kernel_opt] = cast(ComplexKernel, "bilinear"),
     frame: Annotated[int, frame_opt] = 0,
     step: Annotated[float, step_opt] = 1,
+    base_parity: Annotated[Literal["odd", "even"], base_parity_opt] = "even",
     crop: Annotated[tuple[int, int, int, int] | None, crop_opt] = None,
     metric_mode: Annotated[funcs.MetricMode, metric_mode_opt] = "MAE",
     indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),
@@ -115,6 +118,9 @@ def getnative(
         num = int((stop - start) / step_f) + 1
         dims = np.linspace(start, start + step_f * (num - 1), num).tolist()
         x_label_fmt = f"%.{str(step_f)[::-1].find('.') + 1}f"
+
+        if base_parity == "odd":
+            dims = [(d, mod2(ceil(d)) + 1) for d in dims]
 
     # Pair with the fixed dimension
     match dim_mode:

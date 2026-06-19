@@ -129,7 +129,7 @@ range_dim_opt = Option(
     show_default=False,
 )
 step_opt = Option("--step", "-s", help="The increment step between resolutions in the tested range.", metavar="NUMBER")
-
+base_parity_opt = Option("--base-parity", "-bp", help="Base dimension parity for fractional descales")
 
 # getscaler exclusive
 dim_opt = Argument(

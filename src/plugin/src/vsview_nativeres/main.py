@@ -5,12 +5,13 @@ import json
 from concurrent.futures import Future
 from itertools import zip_longest
 from logging import getLogger
+from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import vapoursynth as vs
-from jetpytools import fallback
+from jetpytools import fallback, mod2
 from PySide6.QtCore import QSignalBlocker, QTimer, Signal
 from PySide6.QtGui import QPalette, QShowEvent, Qt
 from PySide6.QtWidgets import (
@@ -95,18 +96,32 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         self.dimension.current_layout.setContentsMargins(0, 0, 0, 0)
         self.dimension.current_layout.setSpacing(0)
         self.dimension.setToolTip("Choose whether to scan candidate source widths or source heights.")
-        self.dimension.segmentChanged.connect(self.on_segment_changed)
+        self.dimension.segmentChanged.connect(self.on_dimension_segment_changed)
         self._last_dimension: int | None = None
-
         dimension_layout = self.make_vgroup("Dimension", self.dimension, parent=self.controls_section)
+
+        self.base_parity = SegmentedControl(["Odd", "Even"], self.controls_section)
+        self.base_parity.current_layout.setContentsMargins(0, 0, 0, 0)
+        self.base_parity.current_layout.setSpacing(0)
+        self.base_parity.setToolTip(
+            "Switches base dimension parity for fractional descales,\n"
+            "introducing a 0.5-pixel subpixel shift to the source offset."
+        )
+        self.base_parity.segmentChanged.connect(self.on_base_parity_segment_changed)
+        self._last_base_parity: int | None = None
+        base_parity_layout = self.make_vgroup("Base Parity", self.base_parity, parent=self.controls_section)
 
         self.reset_values_btn = QPushButton("Reset Controls", self.controls_section)
         self.reset_values_btn.setToolTip("Restore the default range, step, kernel, and metric for the current clip.")
         self.reset_values_btn.clicked.connect(self._set_default_values)
 
-        dimension_layout.addWidget(self.reset_values_btn)
+        dimension_base_parity = QVBoxLayout()
+        dimension_base_parity.addLayout(dimension_layout)
+        dimension_base_parity.addLayout(base_parity_layout)
+        dimension_base_parity.addStretch()
+        dimension_base_parity.addWidget(self.reset_values_btn)
 
-        controls.addLayout(dimension_layout, 1)
+        controls.addLayout(dimension_base_parity, 1)
 
         self.range_min_spin = QSpinBox(self.controls_section, suffix=" px", minimum=0, maximum=99999, singleStep=1)
         self.range_max_spin = QSpinBox(self.controls_section, suffix=" px", minimum=0, maximum=99999, singleStep=1)
@@ -219,7 +234,9 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
     def _set_default_values(self) -> None:
         self.dimension.index = 1
+        self.base_parity.index = 1
         self._last_dimension = 1
+        self._last_base_parity = 1
         with (
             QSignalBlocker(self.range_min_spin),
             QSignalBlocker(self.range_max_spin),
@@ -249,6 +266,9 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             if (d := self.settings.local_.getnative.last_dimension) is not None:
                 self.dimension.index = d
 
+            if (d := self.settings.local_.getnative.last_base_parity) is not None:
+                self.base_parity.index = d
+
             if (range_min := self.settings.local_.getnative.last_min_range) is not None:
                 self.range_min_spin.setValue(range_min)
 
@@ -268,6 +288,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
     def snapshot_ui_values(self) -> None:
         self.settings.local_.getnative.last_dimension = self.dimension.index
+        self.settings.local_.getnative.last_base_parity = self.base_parity.index
         self.settings.local_.getnative.last_max_range = self.range_max_spin.value()
         self.settings.local_.getnative.last_min_range = self.range_min_spin.value()
         self.settings.local_.getnative.last_step = self.step_spin.value()
@@ -314,7 +335,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
     def on_range_max_changed(self, value: int) -> None:
         self.range_min_spin.setMaximum(min(value - 1, self._get_max_dim() - 1))
 
-    def on_segment_changed(self, index: int) -> None:
+    def on_dimension_segment_changed(self, index: int) -> None:
         if self._last_dimension == index:
             return
 
@@ -336,6 +357,9 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             self.range_min_spin.setValue(func(v_min, clip, 1))
             self.range_max_spin.setValue(func(v_max, clip, 1))
 
+    def on_base_parity_segment_changed(self, index: int) -> None:
+        self._last_base_parity = index
+
     def on_calculate_clicked(self) -> None:
         self.calculate_btn.setDisabled(True)
 
@@ -352,6 +376,9 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             num = int((stop - start) / step_f) + 1
             dims = np.linspace(start, start + step_f * (num - 1), num).tolist()
             x_label_fmt = f"%.{str(step_f)[::-1].find('.') + 1}f"
+
+            if self.base_parity.index == 0:
+                dims = [(d, mod2(ceil(d)) + 1) for d in dims]
 
         if len(dims) > 2000:
             res = QMessageBox.warning(

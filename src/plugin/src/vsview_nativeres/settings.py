@@ -141,6 +141,7 @@ class GetNativeLocalSettings(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     last_dimension: int | None = None
+    last_base_parity: int | None = None
     last_min_range: int | None = None
     last_max_range: int | None = None
     last_step: float | None = None

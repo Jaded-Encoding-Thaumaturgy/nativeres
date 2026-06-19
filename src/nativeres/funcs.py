@@ -34,6 +34,12 @@ class ResolutionFrac(NamedTuple):
     height: float
     """Vertical size (may be fractional)."""
 
+    base_width: int | None = None
+    """Integer width to contain the clip within."""
+
+    base_height: int | None = None
+    """Integer height to contain the clip within."""
+
 
 class GetNativeResult(NamedTuple):
     """Result for `getnative`, pairing a fractional resolution with an error metric."""
@@ -48,7 +54,7 @@ class GetNativeResult(NamedTuple):
 def getnative(
     clip: vs.VideoNode,
     frame_num: int,
-    dimensions: Iterable[tuple[float, float]],
+    dimensions: Iterable[tuple[float | tuple[float, int], float | tuple[float, int]]],
     kernel: ComplexKernelLike,
     crop: tuple[LeftCrop, RightCrop, TopCrop, BottomCrop] | None = None,
     shift: tuple[TopShift, LeftShift] = (0, 0),
@@ -68,7 +74,8 @@ def getnative(
     Args:
         clip: Source clip.
         frame_num: Frame index in `clip` to evaluate.
-        dimensions: Iterable of candidate resolutions to test. Each item may be a `(width, height)` tuple.
+        dimensions: Iterable of candidate resolutions to test.
+            Each item may be a `(width, height)` tuple or `((width, base_width), (height, base_height))` tuple.
         kernel: Kernel used to perform each descale attempt.
         crop: Optional crop to apply before descaling. Aspect ratio is preserved.
         shift: Optional pixel shift applied during descaling: `(top_shift, left_shift)`.
@@ -91,10 +98,34 @@ def getnative(
 
     dimensions = list(dimensions)
 
-    rescale_list = [
-        Rescale(clip_frame, res[1], kernel, _point_resize, width=res[0], crop=crop, shift=shift, **kwargs)
-        for res in dimensions
-    ]
+    rescale_list = list[Rescale]()
+    ress = list[ResolutionFrac]()
+
+    for w, h in dimensions:
+        if isinstance(w, tuple):
+            w, bw = w
+        else:
+            bw = None
+        if isinstance(h, tuple):
+            h, bh = h
+        else:
+            bh = None
+
+        ress.append(ResolutionFrac(w, h, bw, bh))
+
+        r = Rescale(
+            clip_frame,
+            h,
+            kernel,
+            _point_resize,
+            width=w,
+            base_height=bh,
+            base_width=bw,
+            crop=crop,
+            shift=shift,
+            **kwargs,
+        )
+        rescale_list.append(r)
 
     rescaled = clip_frame.std.BlankClip(length=len(dimensions)).std.FrameEval(lambda n: rescale_list[n].rescale)
     rescaled = (
@@ -106,7 +137,7 @@ def getnative(
     errors = clip_data_gather(rescaled, progress_cb, lambda _, f: get_prop(f, "PlaneStatsAverage", float))
 
     try:
-        return [GetNativeResult(ResolutionFrac(*d), e) for d, e in zip(dimensions, errors)]
+        return [GetNativeResult(d, e) for d, e in zip(ress, errors)]
     finally:
         for r in rescale_list:
             r.__vs_del__(-1)
