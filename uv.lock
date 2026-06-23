@@ -1044,14 +1044,14 @@ wheels = [
 
 [[package]]
 name = "vsjetengine"
-version = "1.2.0"
+version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "vapoursynth" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/c5/0389f55cdc914005dbf1281d82f16da1cc5ef4696bff0cac8cf2a94b614b/vsjetengine-1.2.0.tar.gz", hash = "sha256:1e19eb83de71f42bf55548e1e1c2fafc1cd23a2c93da9373711868ed7ac90cfd", size = 37375, upload-time = "2026-03-01T17:16:55.405Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/82/01707a25ef1024b8a0bec834300a5370a7c70327586120058d90b734ce09/vsjetengine-1.4.0.tar.gz", hash = "sha256:a4dc1b7a017e8bd4633da6863e13e86f4705bc8389ca44349e94cdb1561b76d6", size = 39779, upload-time = "2026-06-22T19:40:26.01Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c5/ad/002fd81e426ef6c6fa75c469485f541d3b18e60a77780f479712c252aeed/vsjetengine-1.2.0-py3-none-any.whl", hash = "sha256:caa1bf31fb904f0a9e2bc6dfe498c58296d06057460c99ac134306bf3bdf8498", size = 32847, upload-time = "2026-03-01T17:16:53.956Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/46/24e93cebbdd5ccf01a884722df4f85883493ee9e85dace6380449ff3ed17/vsjetengine-1.4.0-py3-none-any.whl", hash = "sha256:87d46f61b4e3c7f6e20cec7388d68f8b3f3385908c9c9832af8744cb0e67e2c2", size = 35081, upload-time = "2026-06-22T19:40:24.918Z" },
 ]
 
 [[package]]
@@ -1098,20 +1098,10 @@ source = [
 
 [[package]]
 name = "vspackrgb"
-version = "1.2.1"
-source = { registry = "https://pypi.org/simple" }
+version = "1.3.0.dev180+g4db2106"
+source = { git = "https://github.com/Jaded-Encoding-Thaumaturgy/vs-view?subdirectory=src%2Fvspackrgb#4db2106cfe9b26e3a6d90c3f400dde580064f2a9" }
 dependencies = [
     { name = "vapoursynth" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/90/03/83ff4a4f4c74dddac1f8979a934d7db34f03ef34bf1a366d3fcbdcfd45b6/vspackrgb-1.2.1.tar.gz", hash = "sha256:68a5dccc08aa6d23b28ad71c2eea847e60d2b089ff70d3577f2c539d62a84d67", size = 11168, upload-time = "2026-04-14T22:05:48.748Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/e3/aa921ab8964caf90954bd857aaa525c72d30acef0e241d9e0ad5b29523d8/vspackrgb-1.2.1-cp312-abi3-macosx_13_0_arm64.whl", hash = "sha256:5904e69d51b1db5975427b103ea8ec0f83e3db543d2972c8632262b7633c7450", size = 81498, upload-time = "2026-04-14T22:05:36.95Z" },
-    { url = "https://files.pythonhosted.org/packages/06/90/3fb40ecd7a7a33776e93b0c2c72044ecc0a33bdec2d5628a8063c6788cdf/vspackrgb-1.2.1-cp312-abi3-macosx_13_0_x86_64.whl", hash = "sha256:11210c3a2e900e50f4632a41e9576f64af68df559f3d18fba2bd9deb96b8139d", size = 86783, upload-time = "2026-04-14T22:05:38.571Z" },
-    { url = "https://files.pythonhosted.org/packages/72/32/aa8a4f9cd58bad4ccff2cfe279afb4da5a040e63354be723061bf1377955/vspackrgb-1.2.1-cp312-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:13ab23af8ff8a25d5a5f51465c3bc17a39c41e6746e7b54ca831d72b00f870b1", size = 444611, upload-time = "2026-04-14T22:05:39.964Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/4e/6c6b66f03a4b68104f9f86f25fedcb5e4043133475234a950f5939a340dd/vspackrgb-1.2.1-cp312-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:5c5b0d4da4305a05646e30e31e361947bb8355eb259677655fddb608c15826e5", size = 450692, upload-time = "2026-04-14T22:05:41.832Z" },
-    { url = "https://files.pythonhosted.org/packages/fc/4e/48c5cd7e6f907d897b94d2a9a1702cf389cef79be2dc0172521ad1138840/vspackrgb-1.2.1-cp312-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:6fa78713eaed0f7d0b63510528a6f1128ddfd523592859cfc83106e9cb6731d6", size = 435061, upload-time = "2026-04-14T22:05:43.528Z" },
-    { url = "https://files.pythonhosted.org/packages/34/22/ec45920311aa4d3e247740506891290dada82074d0e447a8de9ad9282c07/vspackrgb-1.2.1-cp312-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:4c5147235587452842617c88e5c7605ffc835d5c570d22a2cb5d5629dff2cce6", size = 447474, upload-time = "2026-04-14T22:05:45.42Z" },
-    { url = "https://files.pythonhosted.org/packages/d3/56/f0504ea8ddf61248904562e2940e2c3666edcf5889e1746f7aef8d8f2ed8/vspackrgb-1.2.1-cp312-abi3-win_amd64.whl", hash = "sha256:3b38f7248e3b018ff441454333dea2c46c997be72814264e8c35113271c65a10", size = 75449, upload-time = "2026-04-14T22:05:47.143Z" },
 ]
 
 [[package]]
@@ -1134,8 +1124,8 @@ wheels = [
 
 [[package]]
 name = "vsview"
-version = "0.6.2"
-source = { registry = "https://pypi.org/simple" }
+version = "0.8.0.dev18+g4db2106"
+source = { git = "https://github.com/Jaded-Encoding-Thaumaturgy/vs-view#4db2106cfe9b26e3a6d90c3f400dde580064f2a9" }
 dependencies = [
     { name = "jetpytools" },
     { name = "platformdirs" },
@@ -1152,23 +1142,11 @@ dependencies = [
     { name = "vspackrgb" },
     { name = "vsview-cli" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/04/67b71c6de422c2fcecd56274e646917ec88a440c550db0197f4a4e3de186/vsview-0.6.2.tar.gz", hash = "sha256:5dca9adbadda6aed0a57d2ba251f11f752adac5f0942713637cd6e0fdbea89f2", size = 12446631, upload-time = "2026-06-03T21:05:45.474Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/db/e48c0fddbe2fdd4bddb50cce7b6d441aea6eedc1c8c3894c8062d6f1d71c/vsview-0.6.2-py3-none-any.whl", hash = "sha256:20ec215ed9181f8239503edf5a18ec9cf144c0df744f3aa81085e5ce0799e4a3", size = 997175, upload-time = "2026-06-03T21:05:43.534Z" },
-]
 
 [[package]]
 name = "vsview-cli"
-version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7f/17/b3b168250e42190898659c73002f7011a8aa99607bfb72c9cbaa07014dad/vsview_cli-1.0.0.tar.gz", hash = "sha256:1f1111fbc1a87dfba395b65053014a3d71a90232df96f279afcec46acd86c901", size = 15784, upload-time = "2026-04-18T18:25:16.205Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6f/e2/675ded3081b109ce6257fd1b28f24ac5968ae8eb762a875e38c9db4aa0b3/vsview_cli-1.0.0-cp312-abi3-macosx_13_0_arm64.whl", hash = "sha256:bc7ab3de3190a0045dc0ae3699ce48385ddcd0a537aaf832c482f37667bc8cbd", size = 480796, upload-time = "2026-04-18T18:25:09.216Z" },
-    { url = "https://files.pythonhosted.org/packages/3c/1b/1bee4c4a28a616f2c9dff69fea5dfbd24f831cbec0cbe6f2eea020ca7cf0/vsview_cli-1.0.0-cp312-abi3-macosx_13_0_x86_64.whl", hash = "sha256:8c0718f6264dbba4aabbb0377467c57da8ee432185046d07fa4fb5b20f1c2a46", size = 501412, upload-time = "2026-04-18T18:25:10.728Z" },
-    { url = "https://files.pythonhosted.org/packages/d2/91/a3397b7a0e6415f67a5bf14482855754dafacd08d543c5dfbca7afaa6316/vsview_cli-1.0.0-cp312-abi3-manylinux_2_34_aarch64.manylinux_2_39_aarch64.whl", hash = "sha256:aa65a472ae621bad218270c5051a952a866fbda6cc771ffe3a13171490b4ee73", size = 535063, upload-time = "2026-04-18T18:25:12.125Z" },
-    { url = "https://files.pythonhosted.org/packages/db/51/7bd134ae220cd0007cb9db82ce1acf7d17c7dbb4592db39255a6fa5b2c46/vsview_cli-1.0.0-cp312-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:2c1c3f2b31baec553942c4e3fdb912d6cc5046fd09e25eedd719073344e96b4b", size = 566622, upload-time = "2026-04-18T18:25:13.611Z" },
-    { url = "https://files.pythonhosted.org/packages/84/01/654a7dd9916ff59f95071b3f994d38c3f41940c944e03f2029f868fb2c09/vsview_cli-1.0.0-cp312-abi3-win_amd64.whl", hash = "sha256:d84f425eb6b6f5d03c6efb8dd25f1c4a47f463b89be879e5e3b8fc2791e97e74", size = 383576, upload-time = "2026-04-18T18:25:14.954Z" },
-]
+version = "1.1.0"
+source = { git = "https://github.com/Jaded-Encoding-Thaumaturgy/vs-view?subdirectory=src%2Fvsview-cli#4db2106cfe9b26e3a6d90c3f400dde580064f2a9" }
 
 [[package]]
 name = "vsview-nativeres"
@@ -1181,5 +1159,5 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "nativeres", editable = "." },
-    { name = "vsview", specifier = ">=0.6.2" },
+    { name = "vsview", git = "https://github.com/Jaded-Encoding-Thaumaturgy/vs-view" },
 ]

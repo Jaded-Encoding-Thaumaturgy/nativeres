@@ -19,7 +19,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
-dependencies = ["vsview>=0.6.2", "nativeres"]
+dependencies = ["vsview>=0.8.0", "nativeres"]
 dynamic = ["version"]
 
 [project.entry-points.vsview]
@@ -46,3 +46,4 @@ packages = ["src/vsview_nativeres"]
 
 [tool.uv.sources]
 nativeres = { workspace = true }
+vsview = { git = "https://github.com/Jaded-Encoding-Thaumaturgy/vs-view" }

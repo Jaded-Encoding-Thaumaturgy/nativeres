@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import csv
 import json
-from concurrent.futures import Future
 from itertools import zip_longest
 from logging import getLogger
 from math import ceil
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import vapoursynth as vs
@@ -432,16 +431,11 @@ class GetNativeTab(TabContainer, IconReloadMixin):
                     func=self.on_calculate_clicked,
                 )
 
-        @run_in_loop(return_future=False)
-        def on_completed(f: Future[list[GetNativeResult]]) -> None:
+        def on_done(_: Any) -> None:
             self.progress_bar.reset_progress()
             self.calculate_btn.setEnabled(True)
-            if f.exception():
-                logger.exception("Failed to get native results")
-                return
 
-            results = f.result()
-
+        def on_success(results: list[GetNativeResult]) -> None:
             plot = self.create_rescale_plot(title, results, dim_mode, x_label_fmt)
             self.plot_stack.addWidget(plot)
             self.plot_stack.setCurrentWidget(plot)
@@ -453,8 +447,15 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
             self.computedPlotAdded.emit(plot)
 
-        future_results = get_results()
-        future_results.add_done_callback(on_completed)
+        blocker = self.api.blocker()
+        blocker.acquire()
+        (
+            get_results()
+            .add_loop_callback(on_done)
+            .map(on_success, on_loop=True)
+            .catch(lambda e: logger.exception("Failed to get native results", exc_info=e))
+            .add_done_callback(lambda _: blocker.release())
+        )
 
     def create_rescale_plot(
         self,
@@ -723,15 +724,7 @@ class GetScalerTab(TabContainer):
                     func=self.on_calculate_clicked,
                 )
 
-        @run_in_loop(return_future=False)
-        def on_completed(f: Future[list[GetScalerResult]]) -> None:
-            self.calculate_btn.setEnabled(True)
-            if f.exception():
-                logger.exception("Failed to get scaler results")
-                return
-
-            results = f.result()
-
+        def on_success(results: list[GetScalerResult]) -> None:
             if not results:
                 return
 
@@ -751,8 +744,15 @@ class GetScalerTab(TabContainer):
             finally:
                 self.table.setUpdatesEnabled(True)
 
-        future_results = get_results()
-        future_results.add_done_callback(on_completed)
+        blocker = self.api.blocker()
+        blocker.acquire()
+        (
+            get_results()
+            .add_loop_callback(lambda f: self.calculate_btn.setEnabled(True))
+            .map(on_success, on_loop=True)
+            .catch(lambda e: logger.exception("Failed to get scaler results", exc_info=e))
+            .add_done_callback(lambda _: blocker.release())
+        )
 
 
 class GetFreqTab(TabContainer):
@@ -853,16 +853,10 @@ class GetFreqTab(TabContainer):
             with self.api.vs_context():
                 return get_dct_distribution(clip, frame, cull_rate)
 
-        @run_in_loop(return_future=False)
-        def on_completed(f: Future[tuple[NpFloatArray1D, NpFloatArray1D]]) -> None:
+        def on_success(results: tuple[NpFloatArray1D, NpFloatArray1D]) -> None:
             if request_id != self._last_request_id:
                 return
 
-            if e := f.exception():
-                logger.error("Failed to get DCT distribution: %s", e)
-                return
-
-            results = f.result()
             new_plot = self.create_freq_plot(title, results, clip)
 
             if self.plot:
@@ -873,8 +867,14 @@ class GetFreqTab(TabContainer):
             self.canvas.setCurrentWidget(new_plot)
             self.plot = new_plot
 
-        future_results = get_results()
-        future_results.add_done_callback(on_completed)
+        blocker = self.api.blocker()
+        blocker.acquire()
+        (
+            get_results()
+            .map(on_success, on_loop=True)
+            .catch(lambda e: logger.exception("Failed to get DCT distribution", exc_info=e))
+            .add_done_callback(lambda _: blocker.release())
+        )
 
     def create_freq_plot(
         self, title: str, results: tuple[NpFloatArray1D, NpFloatArray1D], clip: vs.VideoNode
