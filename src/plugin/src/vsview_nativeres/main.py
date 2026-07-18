@@ -12,7 +12,7 @@ import numpy as np
 import vapoursynth as vs
 from jetpytools import fallback, mod2
 from PySide6.QtCore import QSignalBlocker, QTimer, Signal
-from PySide6.QtGui import QPalette, QShowEvent, Qt
+from PySide6.QtGui import QPalette, Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
@@ -928,10 +928,7 @@ class NativeResPlugin(WidgetPluginBase[GlobalSettings, LocalSettings]):
         self.tabs.addTab(self.tab_getfreq, "Get Frequencies")
 
         main_layout.addWidget(self.tabs)
-
-    def showEvent(self, event: QShowEvent) -> None:
         warmup_plots()
-        return super().showEvent(event)
 
     # Plugin hooks
     def on_current_voutput_changed(self, voutput: VideoOutputProxy, tab_index: int) -> None:
