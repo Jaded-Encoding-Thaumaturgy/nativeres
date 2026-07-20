@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
 )
 from scipy.signal import argrelextrema
 
-type FloatArray1D = Sequence[float] | np.ndarray[tuple[Literal[1]], np.dtype[np.floating]]
+type FloatArray1D = Sequence[float] | np.ndarray[tuple[int], np.dtype[np.floating]]
 
 logger = getLogger(__name__)
 

@@ -6,7 +6,7 @@ from itertools import zip_longest
 from logging import getLogger
 from math import ceil
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast, reveal_type
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import vapoursynth as vs
