@@ -1759,10 +1759,6 @@ class VideoNode(RawNode):
     resize2: Final[_resize2._VideoNode_bound.Plugin]
     """Built-in VapourSynth resizer based on zimg with some modifications."""
 # </attribute/VideoNode_bound/resize2>
-# <attribute/VideoNode_bound/scxvid>
-    scxvid: Final[_scxvid._VideoNode_bound.Plugin]
-    """VapourSynth Scxvid Plugin"""
-# </attribute/VideoNode_bound/scxvid>
 # <attribute/VideoNode_bound/std>
     std: Final[_std._VideoNode_bound.Plugin]
     """VapourSynth Core Functions"""
@@ -1901,10 +1897,6 @@ class Core:
     resize2: Final[_resize2._Core_bound.Plugin]
     """Built-in VapourSynth resizer based on zimg with some modifications."""
 # </attribute/Core_bound/resize2>
-# <attribute/Core_bound/scxvid>
-    scxvid: Final[_scxvid._Core_bound.Plugin]
-    """VapourSynth Scxvid Plugin"""
-# </attribute/Core_bound/scxvid>
 # <attribute/Core_bound/std>
     std: Final[_std._Core_bound.Plugin]
     """VapourSynth Core Functions"""
@@ -2263,20 +2255,6 @@ class _resize2:
             def Spline64(self, /, width: _IntLike | None = None, height: _IntLike | None = None, format: _IntLike | None = None, matrix: _IntLike | None = None, matrix_s: _AnyStr | None = None, transfer: _IntLike | None = None, transfer_s: _AnyStr | None = None, primaries: _IntLike | None = None, primaries_s: _AnyStr | None = None, range: _IntLike | None = None, range_s: _AnyStr | None = None, chromaloc: _IntLike | None = None, chromaloc_s: _AnyStr | None = None, matrix_in: _IntLike | None = None, matrix_in_s: _AnyStr | None = None, transfer_in: _IntLike | None = None, transfer_in_s: _AnyStr | None = None, primaries_in: _IntLike | None = None, primaries_in_s: _AnyStr | None = None, range_in: _IntLike | None = None, range_in_s: _AnyStr | None = None, chromaloc_in: _IntLike | None = None, chromaloc_in_s: _AnyStr | None = None, filter_param_a: _FloatLike | None = None, filter_param_b: _FloatLike | None = None, resample_filter_uv: _AnyStr | None = None, filter_param_a_uv: _FloatLike | None = None, filter_param_b_uv: _FloatLike | None = None, dither_type: _AnyStr | None = None, cpu_type: _AnyStr | None = None, prefer_props: _IntLike | None = None, src_left: _FloatLike | None = None, src_top: _FloatLike | None = None, src_width: _FloatLike | None = None, src_height: _FloatLike | None = None, nominal_luminance: _FloatLike | None = None, approximate_gamma: _IntLike | None = None, force: _IntLike | None = None, force_h: _IntLike | None = None, force_v: _IntLike | None = None, force_uv: _IntLike | None = None, force_h_uv: _IntLike | None = None, force_v_uv: _IntLike | None = None, blur: _FloatLike | None = None, blur_uv: _FloatLike | None = None) -> VideoNode: ...
 
 # </implementation/resize2>
-
-# <implementation/scxvid>
-class _scxvid:
-    class _Core_bound:
-        class Plugin(_VSPlugin):
-            @_Wrapper.Function
-            def Scxvid(self, /, clip: VideoNode, log: _AnyStr | None = None, use_slices: _IntLike | None = None, prop: _AnyStr | None = None) -> VideoNode: ...
-
-    class _VideoNode_bound:
-        class Plugin(_VSPlugin):
-            @_Wrapper.Function
-            def Scxvid(self, /, log: _AnyStr | None = None, use_slices: _IntLike | None = None, prop: _AnyStr | None = None) -> VideoNode: ...
-
-# </implementation/scxvid>
 
 # <implementation/std>
 class _std:
