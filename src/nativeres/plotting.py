@@ -379,7 +379,7 @@ class RescalePlotWidget(BasePlotWidget):
         if self.dims.size > 0:
             x_min, x_max = self.dims.min(), self.dims.max()
             pad = (x_max - x_min) * 0.05 if x_max != x_min else 1.0
-            self.initial_x_range = (x_min - pad, x_max + pad)
+            self.initial_x_range = (float(x_min - pad), float(x_max + pad))
             self.axis_x.setRange(*self.initial_x_range)
         else:
             self.initial_x_range = (0.0, 10.0)
