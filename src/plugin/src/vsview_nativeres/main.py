@@ -6,7 +6,7 @@ from itertools import zip_longest
 from logging import getLogger
 from math import ceil
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast, reveal_type
 
 import numpy as np
 import vapoursynth as vs
@@ -419,7 +419,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
                 return getnative(
                     self.api.current_voutput.vs_output.clip,
                     frame,
-                    dimensions,
+                    dimensions,  # type: ignore[arg-type]
                     kernel,
                     metric_mode=metric_mode,
                     progress_cb=(

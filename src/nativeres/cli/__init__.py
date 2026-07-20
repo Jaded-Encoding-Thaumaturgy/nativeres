@@ -141,7 +141,7 @@ def getnative(
         results = funcs.getnative(
             clip,
             frame,
-            dimensions,
+            dimensions,  # type: ignore[arg-type]
             kernel,
             crop,
             metric_mode=metric_mode,
