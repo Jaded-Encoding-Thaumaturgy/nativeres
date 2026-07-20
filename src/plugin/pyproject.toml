@@ -46,4 +46,3 @@ packages = ["src/vsview_nativeres"]
 
 [tool.uv.sources]
 nativeres = { workspace = true }
-vsview = { git = "https://github.com/Jaded-Encoding-Thaumaturgy/vs-view" }
