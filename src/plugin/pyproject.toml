@@ -19,7 +19,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
-dependencies = ["vsview>=0.8.0", "nativeres"]
+dependencies = ["vsview>=0.8.0", "nativeres>=0.2.0"]
 dynamic = ["version"]
 
 [project.entry-points.vsview]
