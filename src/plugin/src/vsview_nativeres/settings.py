@@ -40,7 +40,7 @@ class KernelListEditWidget(ListEditWidget[str]):
             self.adapter.validate_python(text)
             resolve_kernel(text, ValidationError)
             self.list_widget.addItem(text)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error("Invalid value: %s", e)
 
 

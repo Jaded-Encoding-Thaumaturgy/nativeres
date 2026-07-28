@@ -69,7 +69,6 @@ def callback(
     global_debug: Annotated[bool, global_debug_opt] = False,
 ) -> None:
     """Descale analysis tools for VapourSynth."""
-    ...
 
 
 @app.command(
@@ -82,14 +81,14 @@ def getnative(
     input_file: Annotated[SPath, input_file_arg],
     range_dim: Annotated[tuple[int, int] | None, range_dim_opt] = None,
     dim_mode: Annotated[Literal["height", "width"], dim_mode_opt] = "height",
-    kernel: Annotated[ComplexKernel, kernel_opt] = cast(ComplexKernel, "bilinear"),
+    kernel: Annotated[ComplexKernel, kernel_opt] = cast(ComplexKernel, "bilinear"),  # noqa: B008
     linear: Annotated[bool, linear_opt] = False,
     frame: Annotated[int, frame_opt] = 0,
     step: Annotated[float, step_opt] = 1,
     base_parity: Annotated[Literal["odd", "even"], base_parity_opt] = "even",
     crop: Annotated[tuple[int, int, int, int] | None, crop_opt] = None,
     metric_mode: Annotated[funcs.MetricMode, metric_mode_opt] = "MAE",
-    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),
+    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),  # noqa: B008
 ) -> None:
     import numpy as np
     from PySide6.QtWidgets import QApplication, QMainWindow, QStyle
@@ -196,13 +195,13 @@ def getscaler(
     dim: Annotated[float, dim_opt],
     dim_mode: Annotated[Literal["height", "width"], dim_mode_opt] = "height",
     base_dim_opt: Annotated[int | None, base_dim_opt] = None,
-    kernels: Annotated[list[ComplexKernel], kernel_opt] = [],
+    kernels: Annotated[list[ComplexKernel], kernel_opt] = [],  # noqa: B006
     linear: Annotated[bool, linear_opt] = False,
     frame: Annotated[int, frame_opt] = 0,
     crop: Annotated[tuple[int, int, int, int] | None, crop_opt] = None,
     metric_mode: Annotated[funcs.MetricMode, metric_mode_opt] = "MAE",
     mask: Annotated[type[EdgeDetect] | None, mask_opt] = None,
-    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),
+    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),  # noqa: B008
 ) -> None:
     clip = get_videonode_from_input(input_file, indexer)
 
@@ -287,7 +286,7 @@ def getfreq(
     cull_rate: Annotated[float, cull_rate_opt] = 3.0,
     radius: Annotated[int, radius_opt] = 50,
     linear: Annotated[bool, linear_opt] = False,
-    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),
+    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),  # noqa: B008
 ) -> None:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStyle
 
