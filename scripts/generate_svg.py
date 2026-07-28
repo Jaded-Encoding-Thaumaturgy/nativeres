@@ -1,5 +1,6 @@
 import os
 import shlex
+import sys
 import traceback
 
 from rich.console import Console
@@ -44,7 +45,7 @@ def generate_svg(command: str = "") -> None:
 
     if not output_text:
         print("Failed to capture output!")
-        exit(1)
+        sys.exit(1)
 
     # Force rounded boxes
     output_text = output_text.replace("┌", "╭").replace("┐", "╮").replace("└", "╰").replace("┘", "╯")
