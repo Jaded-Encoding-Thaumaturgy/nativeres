@@ -102,7 +102,10 @@ def getnative(
     rescale_list = list[Rescale]()
     ress = list[ResolutionFrac]()
 
-    for w, h in dimensions:
+    if progress_cb:
+        progress_cb(0, len(dimensions))
+
+    for i, (w, h) in enumerate(dimensions):
         if isinstance(w, tuple):
             w, bw = w
         else:
@@ -127,6 +130,8 @@ def getnative(
             **kwargs,
         )
         rescale_list.append(r)
+        if progress_cb:
+            progress_cb(i, len(dimensions))
 
     def eval_func(n: int) -> vs.VideoNode:
         res = rescale_list[n]
