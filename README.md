@@ -7,7 +7,7 @@ It combines and supersedes the following tools:
 - Original **getscaler** by **cN3rd** https://gist.github.com/cN3rd/51077b6abf45b684bf9a3c657d859b43
 - Original **getnative** by **Infiziert90** https://github.com/Infiziert90/getnative
 - **GetFnative** by **YomikoR** https://github.com/YomikoR/GetFnative
-- **getfscaler** https://github.com/Jaded-Encoding-Thaumaturgy/getscaler
+- **getfscaler** https://github.com/Jaded-Encoding-Thaumaturgy/getfscaler
 
 The package provides:
 
