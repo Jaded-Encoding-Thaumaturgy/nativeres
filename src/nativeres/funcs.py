@@ -1,12 +1,13 @@
 """Python API."""
 
 import ast
+import gc
 import re
 from collections.abc import Callable, Iterable, Sequence
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
-from jetpytools import FuncExcept, mod2, to_arr
+from jetpytools import FuncExcept, cachedproperty, mod2, to_arr
 from vsexprtools import ExprOp, norm_expr
 from vskernels import ComplexKernel, ComplexKernelLike, Kernel, LeftShift, Point, TopShift
 from vsmasktools import MaskLike, normalize_mask
@@ -127,7 +128,14 @@ def getnative(
         )
         rescale_list.append(r)
 
-    rescaled = clip_frame.std.BlankClip(length=len(dimensions)).std.FrameEval(lambda n: rescale_list[n].rescale)
+    def eval_func(n: int) -> vs.VideoNode:
+        res = rescale_list[n]
+        try:
+            return res.rescale
+        finally:
+            cachedproperty.clear_cache(res)
+
+    rescaled = clip_frame.std.BlankClip(length=len(dimensions)).std.FrameEval(eval_func)
     rescaled = (
         norm_expr([rescaled, clip_frame], getattr(ExprOp, metric_mode.lower())(clip_frame), func=func)
         .std.CropRel(*crops)
@@ -141,6 +149,8 @@ def getnative(
     finally:
         for r in rescale_list:
             r.__vs_del__(-1)
+        del clip_frame, rescaled
+        gc.collect()
 
 
 getfnative = getnative
