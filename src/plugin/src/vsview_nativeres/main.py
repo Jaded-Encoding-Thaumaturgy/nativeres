@@ -496,13 +496,16 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
             self.computedPlotAdded.emit(plot)
 
+        def on_fail(e: BaseException) -> None:
+            logger.exception("Failed to get native results", exc_info=e)
+            e.__traceback__ = None
+
         blocker = self.api.blocker()
         blocker.acquire()
         (
             get_results()
             .add_loop_callback(on_done)
-            .map(on_success, on_loop=True)
-            .catch(lambda e: logger.exception("Failed to get native results", exc_info=e))
+            .then(on_success, on_fail, on_loop=True)
             .add_done_callback(lambda _: blocker.release())
         )
 
