@@ -17,6 +17,7 @@ from rich.table import Table
 from vskernels import ComplexKernel
 from vsmasktools import EdgeDetect
 from vssource import Indexer
+from vstools import vs
 
 from .. import funcs
 from ..constants import HIGH_RATE, LOW_RATE
@@ -35,6 +36,7 @@ from .components import (
     indexer_opt,
     input_file_arg,
     kernel_opt,
+    linear_opt,
     mask_opt,
     metric_mode_opt,
     radius_opt,
@@ -81,6 +83,7 @@ def getnative(
     range_dim: Annotated[tuple[int, int] | None, range_dim_opt] = None,
     dim_mode: Annotated[Literal["height", "width"], dim_mode_opt] = "height",
     kernel: Annotated[ComplexKernel, kernel_opt] = cast(ComplexKernel, "bilinear"),
+    linear: Annotated[bool, linear_opt] = False,
     frame: Annotated[int, frame_opt] = 0,
     step: Annotated[float, step_opt] = 1,
     base_parity: Annotated[Literal["odd", "even"], base_parity_opt] = "even",
@@ -94,6 +97,9 @@ def getnative(
     from ..plotting import RescalePlotWidget
 
     clip = get_videonode_from_input(input_file, indexer)
+
+    if linear:
+        clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
 
     # Resolve dimension and the range of dimensions to check
     if range_dim:
@@ -145,7 +151,7 @@ def getnative(
             kernel,
             crop,
             metric_mode=metric_mode,
-            progress_cb=lambda curr, total: progress.update(gtask_id, advance=1, total=total, visible=True),
+            progress_cb=lambda curr, total: progress.update(gtask_id, completed=curr, total=total, visible=True),
         )
         progress.update(gtask_id, total=100, completed=100, refresh=True)
 
@@ -191,6 +197,7 @@ def getscaler(
     dim_mode: Annotated[Literal["height", "width"], dim_mode_opt] = "height",
     base_dim_opt: Annotated[int | None, base_dim_opt] = None,
     kernels: Annotated[list[ComplexKernel], kernel_opt] = [],
+    linear: Annotated[bool, linear_opt] = False,
     frame: Annotated[int, frame_opt] = 0,
     crop: Annotated[tuple[int, int, int, int] | None, crop_opt] = None,
     metric_mode: Annotated[funcs.MetricMode, metric_mode_opt] = "MAE",
@@ -198,6 +205,9 @@ def getscaler(
     indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),
 ) -> None:
     clip = get_videonode_from_input(input_file, indexer)
+
+    if linear:
+        clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
 
     # Resolve dimension to check
     scaler_args: dict[str, Any] = {
@@ -276,6 +286,7 @@ def getfreq(
     frame: Annotated[int, frame_opt] = 0,
     cull_rate: Annotated[float, cull_rate_opt] = 3.0,
     radius: Annotated[int, radius_opt] = 50,
+    linear: Annotated[bool, linear_opt] = False,
     indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),
 ) -> None:
     from PySide6.QtWidgets import QApplication, QMainWindow, QStyle
@@ -284,6 +295,9 @@ def getfreq(
     from ..plotting import FrequencyPlotWidget
 
     clip = get_videonode_from_input(input_file, indexer)
+
+    if linear:
+        clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
 
     progress = get_progress(console)
     task = progress.add_task("Calculating DCT distribution...", total=None)

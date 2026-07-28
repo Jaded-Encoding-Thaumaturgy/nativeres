@@ -101,6 +101,12 @@ indexer_opt = Option(
     show_default="BestSource",
     rich_help_panel="Common",
 )
+linear_opt = Option(
+    "--linear",
+    "-l",
+    help="Whether to process rescale in linear light",
+    rich_help_panel="Common",
+)
 
 # Helpers
 show_default_kernels_opt = Option(
