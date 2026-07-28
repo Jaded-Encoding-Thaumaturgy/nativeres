@@ -481,6 +481,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
                 )
 
         def on_done(_: Any) -> None:
+            self.progress_container.hide()
             self.progress_bar.reset_progress()
             self.calculate_btn.setEnabled(True)
 
