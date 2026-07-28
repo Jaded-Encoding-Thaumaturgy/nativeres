@@ -255,7 +255,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
     def _set_default_values(self) -> None:
         self.dimension.index = 1
         self.base_parity.index = 1
-        self._last_dimension = 1
+        self._update_dimension_stack(1)
         self._last_base_parity = 1
         with (
             QSignalBlocker(self.range_min_stack),
@@ -268,8 +268,6 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             QSignalBlocker(self.kernels_cb),
             QSignalBlocker(self.metrics_cb),
         ):
-            self.range_min_stack.setCurrentWidget(self.range_min_spin_h)
-            self.range_max_stack.setCurrentWidget(self.range_max_spin_h)
             self.range_min_spin_h.setValue(int(self.api.current_voutput.vs_output.clip.height * LOW_RATE))
             self.range_max_spin_h.setValue(int(self.api.current_voutput.vs_output.clip.height * HIGH_RATE))
             self.range_min_spin_w.setValue(int(self.api.current_voutput.vs_output.clip.width * LOW_RATE))
@@ -295,6 +293,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         ):
             if (d := self.settings.local_.getnative.last_dimension) is not None:
                 self.dimension.index = d
+                self._update_dimension_stack(d)
 
             if (d := self.settings.local_.getnative.last_base_parity) is not None:
                 self.base_parity.index = d
@@ -404,18 +403,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
     def on_dimension_segment_changed(self, index: int) -> None:
         if self._last_dimension == index:
             return
-
-        self._last_dimension = index
-
-        match self.dimension.index:
-            case 1:
-                self.range_max_stack.setCurrentWidget(self.range_max_spin_h)
-                self.range_min_stack.setCurrentWidget(self.range_min_spin_h)
-            case 0:
-                self.range_max_stack.setCurrentWidget(self.range_max_spin_w)
-                self.range_min_stack.setCurrentWidget(self.range_min_spin_w)
-            case _:
-                raise ValueError("Invalid dimension")
+        self._update_dimension_stack(index)
 
     def on_base_parity_segment_changed(self, index: int) -> None:
         self._last_base_parity = index
@@ -601,6 +589,19 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             dim_mode = header[0]
             data = list(reader)
         return dim_mode, [float(row[0]) for row in data], [float(row[1]) for row in data]
+
+    def _update_dimension_stack(self, index: int) -> None:
+        self._last_dimension = index
+
+        match index:
+            case 1:
+                self.range_max_stack.setCurrentWidget(self.range_max_spin_h)
+                self.range_min_stack.setCurrentWidget(self.range_min_spin_h)
+            case 0:
+                self.range_max_stack.setCurrentWidget(self.range_max_spin_w)
+                self.range_min_stack.setCurrentWidget(self.range_min_spin_w)
+            case _:
+                raise ValueError("Invalid dimension")
 
 
 class GetScalerTab(TabContainer):
