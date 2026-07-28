@@ -59,7 +59,7 @@ from nativeres.funcs import (
     resolve_kernel,
 )
 
-from .components import GetNativeImportList, ProgressBar, TabContainer
+from .components import GetNativeImportList, ProgressBar, RangeSpinStack, TabContainer
 from .settings import GlobalSettings, LocalSettings
 from .utils import get_edge_detect_classes, warmup_plots
 
@@ -122,14 +122,35 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
         controls.addLayout(dimension_base_parity, 1)
 
-        self.range_min_spin = QSpinBox(self.controls_section, suffix=" px", minimum=0, maximum=99999, singleStep=1)
-        self.range_max_spin = QSpinBox(self.controls_section, suffix=" px", minimum=0, maximum=99999, singleStep=1)
-        self.range_min_spin.setToolTip("Lowest candidate dimension to test.")
-        self.range_max_spin.setToolTip("Highest candidate dimension to test.")
-        self.range_min_spin.valueChanged.connect(self.on_range_min_changed)
-        self.range_max_spin.valueChanged.connect(self.on_range_max_changed)
+        self.range_min_stack = RangeSpinStack(self.controls_section)
+        self.range_max_stack = RangeSpinStack(self.controls_section)
+        self.range_min_spin_h = QSpinBox(self.controls_section, suffix=" px", minimum=0, maximum=99999, singleStep=1)
+        self.range_max_spin_h = QSpinBox(self.controls_section, suffix=" px", minimum=0, maximum=99999, singleStep=1)
+        self.range_min_spin_w = QSpinBox(self.controls_section, suffix=" px", minimum=0, maximum=99999, singleStep=1)
+        self.range_max_spin_w = QSpinBox(self.controls_section, suffix=" px", minimum=0, maximum=99999, singleStep=1)
+        self.range_min_spin_h.setToolTip("Lowest candidate dimension to test.")
+        self.range_max_spin_h.setToolTip("Highest candidate dimension to test.")
+        self.range_min_spin_w.setToolTip("Lowest candidate dimension to test.")
+        self.range_max_spin_w.setToolTip("Highest candidate dimension to test.")
+        self.range_min_spin_h.valueChanged.connect(self.on_range_min_h_changed)
+        self.range_max_spin_h.valueChanged.connect(self.on_range_max_h_changed)
+        self.range_min_spin_w.valueChanged.connect(self.on_range_min_w_changed)
+        self.range_max_spin_w.valueChanged.connect(self.on_range_max_w_changed)
+
+        self.range_min_stack.addWidget(self.range_min_spin_h)
+        self.range_min_stack.addWidget(self.range_min_spin_w)
+        self.range_min_stack.setCurrentWidget(self.range_min_spin_h)
+
+        self.range_max_stack.addWidget(self.range_max_spin_h)
+        self.range_max_stack.addWidget(self.range_max_spin_w)
+        self.range_max_stack.setCurrentWidget(self.range_max_spin_h)
+
         range_layout = self.make_vgroup(
-            "Range", self.range_min_spin, self.range_max_spin, parent=self.controls_section, stretch=False
+            "Range",
+            self.range_min_stack,
+            self.range_max_stack,
+            parent=self.controls_section,
+            stretch=False,
         )
 
         self.step_spin = QDoubleSpinBox(
@@ -163,7 +184,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
         self.kernels_metrics_layout = QVBoxLayout()
         self.kernels_metrics_layout.addLayout(kernels_layout)
-        self.kernels_metrics_layout.addSpacing(self.range_max_spin.height() + 4)
+        self.kernels_metrics_layout.addSpacing(self.range_max_stack.height() + 4)
         self.kernels_metrics_layout.addLayout(metrics_layout)
         self.kernels_metrics_layout.addStretch()
 
@@ -237,14 +258,22 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         self._last_dimension = 1
         self._last_base_parity = 1
         with (
-            QSignalBlocker(self.range_min_spin),
-            QSignalBlocker(self.range_max_spin),
+            QSignalBlocker(self.range_min_stack),
+            QSignalBlocker(self.range_max_stack),
+            QSignalBlocker(self.range_min_spin_h),
+            QSignalBlocker(self.range_max_spin_h),
+            QSignalBlocker(self.range_min_spin_w),
+            QSignalBlocker(self.range_max_spin_w),
             QSignalBlocker(self.step_spin),
             QSignalBlocker(self.kernels_cb),
             QSignalBlocker(self.metrics_cb),
         ):
-            self.range_min_spin.setValue(int(self.api.current_voutput.vs_output.clip.height * LOW_RATE))
-            self.range_max_spin.setValue(int(self.api.current_voutput.vs_output.clip.height * HIGH_RATE))
+            self.range_min_stack.setCurrentWidget(self.range_min_spin_h)
+            self.range_max_stack.setCurrentWidget(self.range_max_spin_h)
+            self.range_min_spin_h.setValue(int(self.api.current_voutput.vs_output.clip.height * LOW_RATE))
+            self.range_max_spin_h.setValue(int(self.api.current_voutput.vs_output.clip.height * HIGH_RATE))
+            self.range_min_spin_w.setValue(int(self.api.current_voutput.vs_output.clip.width * LOW_RATE))
+            self.range_max_spin_w.setValue(int(self.api.current_voutput.vs_output.clip.width * HIGH_RATE))
             self.step_spin.setValue(fallback(self.settings.local_.getnative.last_step, 1.0))
             for k in self.settings.global_.kernels:
                 self.kernels_cb.addItem(k.pretty_string, k)
@@ -256,8 +285,10 @@ class GetNativeTab(TabContainer, IconReloadMixin):
     def _set_saved_values(self) -> None:
         with (
             QSignalBlocker(self.dimension),
-            QSignalBlocker(self.range_min_spin),
-            QSignalBlocker(self.range_max_spin),
+            QSignalBlocker(self.range_min_spin_h),
+            QSignalBlocker(self.range_max_spin_h),
+            QSignalBlocker(self.range_min_spin_w),
+            QSignalBlocker(self.range_max_spin_w),
             QSignalBlocker(self.step_spin),
             QSignalBlocker(self.kernels_cb),
             QSignalBlocker(self.metrics_cb),
@@ -268,11 +299,15 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             if (d := self.settings.local_.getnative.last_base_parity) is not None:
                 self.base_parity.index = d
 
-            if (range_min := self.settings.local_.getnative.last_min_range) is not None:
-                self.range_min_spin.setValue(range_min)
+            if (range_min := self.settings.local_.getnative.last_min_h_range) is not None:
+                self.range_min_spin_h.setValue(range_min)
+            if (range_max := self.settings.local_.getnative.last_max_h_range) is not None:
+                self.range_max_spin_h.setValue(range_max)
 
-            if (range_max := self.settings.local_.getnative.last_max_range) is not None:
-                self.range_max_spin.setValue(range_max)
+            if (range_min := self.settings.local_.getnative.last_min_w_range) is not None:
+                self.range_min_spin_w.setValue(range_min)
+            if (range_max := self.settings.local_.getnative.last_max_w_range) is not None:
+                self.range_max_spin_w.setValue(range_max)
 
             if (step := self.settings.local_.getnative.last_step) is not None:
                 self.step_spin.setValue(step)
@@ -288,8 +323,10 @@ class GetNativeTab(TabContainer, IconReloadMixin):
     def snapshot_ui_values(self) -> None:
         self.settings.local_.getnative.last_dimension = self.dimension.index
         self.settings.local_.getnative.last_base_parity = self.base_parity.index
-        self.settings.local_.getnative.last_max_range = self.range_max_spin.value()
-        self.settings.local_.getnative.last_min_range = self.range_min_spin.value()
+        self.settings.local_.getnative.last_max_h_range = self.range_max_spin_h.value()
+        self.settings.local_.getnative.last_min_h_range = self.range_min_spin_h.value()
+        self.settings.local_.getnative.last_max_w_range = self.range_max_spin_w.value()
+        self.settings.local_.getnative.last_min_w_range = self.range_min_spin_w.value()
         self.settings.local_.getnative.last_step = self.step_spin.value()
         self.settings.local_.getnative.last_kernel = resolve_kernel(self.kernels_cb.currentText())
         self.settings.local_.getnative.last_metric = self.metrics_cb.currentText()
@@ -314,47 +351,71 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         return clip.height if self.dimension.index == 1 else clip.width
 
     def update_limits(self) -> None:
-        max_dim = self._get_max_dim()
+        clip = self.api.current_voutput.vs_output.clip
+        with (
+            QSignalBlocker(self.range_min_spin_h),
+            QSignalBlocker(self.range_max_spin_h),
+            QSignalBlocker(self.range_min_spin_w),
+            QSignalBlocker(self.range_max_spin_w),
+        ):
+            self.range_min_spin_h.setRange(1, clip.height - 1)
+            self.range_max_spin_h.setRange(2, clip.height)
+            self.range_min_spin_w.setRange(1, clip.width - 1)
+            self.range_max_spin_w.setRange(2, clip.width)
 
-        with QSignalBlocker(self.range_min_spin), QSignalBlocker(self.range_max_spin):
-            # Absolute limits first
-            self.range_min_spin.setMaximum(max_dim - 1)
-            self.range_max_spin.setMaximum(max_dim)
+            self.range_max_spin_h.setMinimum(self.range_min_spin_h.value() + 1)
+            self.range_min_spin_h.setMaximum(self.range_max_spin_h.value() - 1)
 
-            # Then relative limits to maintain min < max
-            cur_min = self.range_min_spin.value()
-            cur_max = self.range_max_spin.value()
+            self.range_max_spin_w.setMinimum(self.range_min_spin_w.value() + 1)
+            self.range_min_spin_w.setMaximum(self.range_max_spin_w.value() - 1)
 
-            self.range_min_spin.setMaximum(min(self.range_min_spin.maximum(), cur_max - 1))
-            self.range_max_spin.setMinimum(cur_min + 1)
+    def on_range_min_h_changed(self, value: int) -> None:
+        clip = self.api.current_voutput.vs_output.clip
+        w_val = get_w(value, clip, 1)
+        self.range_max_spin_h.setMinimum(value + 1)
+        with QSignalBlocker(self.range_min_spin_w), QSignalBlocker(self.range_max_spin_w):
+            self.range_min_spin_w.setValue(w_val)
+            self.range_max_spin_w.setMinimum(w_val + 1)
 
-    def on_range_min_changed(self, value: int) -> None:
-        self.range_max_spin.setMinimum(value + 1)
+    def on_range_max_h_changed(self, value: int) -> None:
+        clip = self.api.current_voutput.vs_output.clip
+        w_val = get_w(value, clip, 1)
+        self.range_min_spin_h.setMaximum(value - 1)
+        with QSignalBlocker(self.range_min_spin_w), QSignalBlocker(self.range_max_spin_w):
+            self.range_max_spin_w.setValue(w_val)
+            self.range_min_spin_w.setMaximum(w_val - 1)
 
-    def on_range_max_changed(self, value: int) -> None:
-        self.range_min_spin.setMaximum(min(value - 1, self._get_max_dim() - 1))
+    def on_range_min_w_changed(self, value: int) -> None:
+        clip = self.api.current_voutput.vs_output.clip
+        h_val = get_h(value, clip, 1)
+        self.range_max_spin_w.setMinimum(value + 1)
+        with QSignalBlocker(self.range_min_spin_h), QSignalBlocker(self.range_max_spin_h):
+            self.range_min_spin_h.setValue(h_val)
+            self.range_max_spin_h.setMinimum(h_val + 1)
+
+    def on_range_max_w_changed(self, value: int) -> None:
+        clip = self.api.current_voutput.vs_output.clip
+        h_val = get_h(value, clip, 1)
+        self.range_min_spin_w.setMaximum(value - 1)
+        with QSignalBlocker(self.range_min_spin_h), QSignalBlocker(self.range_max_spin_h):
+            self.range_max_spin_h.setValue(h_val)
+            self.range_min_spin_h.setMaximum(h_val - 1)
 
     def on_dimension_segment_changed(self, index: int) -> None:
         if self._last_dimension == index:
             return
 
-        clip = self.api.current_voutput.vs_output.clip
         self._last_dimension = index
 
         match self.dimension.index:
             case 1:
-                func = get_h
+                self.range_max_stack.setCurrentWidget(self.range_max_spin_h)
+                self.range_min_stack.setCurrentWidget(self.range_min_spin_h)
             case 0:
-                func = get_w
+                self.range_max_stack.setCurrentWidget(self.range_max_spin_w)
+                self.range_min_stack.setCurrentWidget(self.range_min_spin_w)
             case _:
                 raise ValueError("Invalid dimension")
-
-        with QSignalBlocker(self.range_min_spin), QSignalBlocker(self.range_max_spin):
-            v_min = self.range_min_spin.value()
-            v_max = self.range_max_spin.value()
-            self.update_limits()
-            self.range_min_spin.setValue(func(v_min, clip, 1))
-            self.range_max_spin.setValue(func(v_max, clip, 1))
 
     def on_base_parity_segment_changed(self, index: int) -> None:
         self._last_base_parity = index
@@ -364,8 +425,8 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
         clip = self.api.current_voutput.vs_output.clip
 
-        start = self.range_min_spin.value()
-        stop = self.range_max_spin.value()
+        start = self.range_min_stack.current.value()
+        stop = self.range_max_stack.current.value()
         step_f = self.step_spin.value()
 
         if step_f.is_integer():

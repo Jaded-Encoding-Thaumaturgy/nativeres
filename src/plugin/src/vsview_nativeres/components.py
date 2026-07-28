@@ -1,6 +1,17 @@
+from jetpytools import CustomNotImplementedError
 from PySide6.QtCore import QSize
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QLabel, QLayout, QListWidget, QProgressBar, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QLabel,
+    QLayout,
+    QListWidget,
+    QProgressBar,
+    QScrollArea,
+    QSpinBox,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
 from vsview.api import run_in_loop
 
 
@@ -78,3 +89,11 @@ class ProgressBar(QProgressBar):
     def reset_progress(self) -> None:
         self.reset()
         self.setFormat("%p%")
+
+
+class RangeSpinStack(QStackedWidget):
+    @property
+    def current(self) -> QSpinBox:
+        if isinstance(w := self.currentWidget(), QSpinBox):
+            return w
+        raise CustomNotImplementedError

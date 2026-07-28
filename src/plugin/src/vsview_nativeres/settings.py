@@ -142,8 +142,10 @@ class GetNativeLocalSettings(BaseModel):
 
     last_dimension: int | None = None
     last_base_parity: int | None = None
-    last_min_range: int | None = None
-    last_max_range: int | None = None
+    last_min_h_range: int | None = None
+    last_max_h_range: int | None = None
+    last_min_w_range: int | None = None
+    last_max_w_range: int | None = None
     last_step: float | None = None
     last_kernel: PydanticKernel | None = None
     last_metric: str | None = None
