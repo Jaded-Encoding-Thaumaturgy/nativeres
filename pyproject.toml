@@ -56,9 +56,9 @@ plugin = ["vsview-nativeres"]
 [dependency-groups]
 dev = [
     "lazydocs>=0.4.8",
-    "mypy>=2.1.0, <2.2.0",
+    "mypy>=2.3.0, <2.4.0",
     "pydocstyle>=6.3.0",
-    "ruff>=0.15.0, <0.16.0",
+    "ruff>=0.16.0, <0.17.0",
     "scipy-stubs>=1.16.0.0",
     "vsstubs>=2.0.0",
     # Specify them to resolve transitive dependency resolution and uv index
