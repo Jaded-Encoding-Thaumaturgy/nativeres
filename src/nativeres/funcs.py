@@ -13,7 +13,7 @@ from vskernels import ComplexKernel, ComplexKernelLike, Kernel, LeftShift, Point
 from vsmasktools import MaskLike, normalize_mask
 from vsscale import Rescale
 from vsscale.helpers import BottomCrop, CropRel, LeftCrop, RightCrop, TopCrop
-from vstools import clip_data_gather, core, depth, get_prop, get_y, padder, vs
+from vstools import Padder, clip_data_gather, core, depth, get_prop, get_y, vs
 
 if TYPE_CHECKING:
     import numpy as np
@@ -371,13 +371,11 @@ def get_dct_distribution(
         if cull_rate:
             side_cut = mod2(c.width / (2 + cull_rate))
 
-        padded = padder.MIRROR(
-            c.std.Crop(side_cut, side_cut, top_cut, top_cut),
-            side_cut // 2,
-            side_cut // 2,
-            top_cut,
-            top_cut,
-        ).std.Transpose()
+        padded = (
+            Padder(side_cut // 2, side_cut // 2, top_cut, top_cut)
+            .mirror(c.std.Crop(side_cut, side_cut, top_cut, top_cut))
+            .std.Transpose()
+        )
 
         rows = np.asarray(padded.get_frame(0)[0], dtype=np.float64)
         rows_dct = scipy.fft.dct(rows, axis=-1)
