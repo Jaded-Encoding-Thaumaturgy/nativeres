@@ -1,99 +1,142 @@
 """CLI module"""
 
 import sys
-import warnings
 from itertools import zip_longest
-from logging import INFO, basicConfig, captureWarnings, getLogger
+from logging import DEBUG, getLogger
 from math import ceil
-from typing import Annotated, Any, Literal, assert_never, cast
+from typing import Annotated, Any, Literal, assert_never
 
-from jetpytools import SPath, mod2
-from rich.console import Console
-from rich.logging import RichHandler
+from cyclopts import App, Group, Parameter
+from jetpytools import mod2
 from rich.pretty import pretty_repr
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.style import Style
 from rich.table import Table
-from vskernels import ComplexKernel
+from vskernels import Bilinear
 from vsmasktools import EdgeDetect
-from vssource import Indexer
+from vssource import BestSource
 from vstools import vs
 
 from .. import funcs
 from ..constants import HIGH_RATE, LOW_RATE
 from ..kernels import default_kernels
 from .components import (
-    app,
-    base_dim_opt,
-    base_parity_opt,
-    crop_opt,
-    cull_rate_opt,
-    debug_opt,
-    dim_mode_opt,
-    dim_opt,
-    frame_opt,
-    global_debug_opt,
-    indexer_opt,
-    input_file_arg,
-    kernel_opt,
-    linear_opt,
-    mask_opt,
-    metric_mode_opt,
-    radius_opt,
-    range_dim_opt,
-    show_default_kernels_opt,
-    show_vskernels_opt,
-    step_opt,
+    CleanHelpFormatter,
+    CropOpt,
+    DimModeOpt,
+    FrameOpt,
+    IndexerOpt,
+    InputFileArg,
+    KernelOpt,
+    KernelsOpt,
+    LinearOpt,
+    MetricModeOpt,
+    helpers_group,
 )
-from .helpers import get_progress, get_videonode_from_input
-
-console = Console(stderr=True)
-
-warnings.filterwarnings("always")
-captureWarnings(True)
-basicConfig(
-    level=INFO,
-    handlers=[RichHandler(console=console)],
-    format="{name}: {message}",
-    style="{",
+from .helpers import (
+    get_progress,
+    get_videonode_from_input,
+    resolve_dimension,
+    show_default_kernels,
+    show_masks,
+    show_vskernels,
 )
+from .logging import console, setup_logging
 
 logger = getLogger(__name__)
 
-
-@app.callback()
-def callback(
-    show_kernels: Annotated[bool, show_default_kernels_opt] = False,
-    show_vskernels: Annotated[bool, show_vskernels_opt] = False,
-    debug: Annotated[bool, debug_opt] = False,
-    global_debug: Annotated[bool, global_debug_opt] = False,
-) -> None:
-    """Descale analysis tools for VapourSynth."""
-
-
-@app.command(
-    help="[bold]Determine the native resolution of upscaled material.[/]\n\n"
-    "Analyzes a range of dimensions to find which one produces the lowest error when inverse scaled.\n"
-    "Primary use case is finding the native resolution of upscaled anime.",
-    no_args_is_help=True,
+app = App(
+    name="nativeres",
+    console=console,
+    help_formatter=CleanHelpFormatter.with_newline_metadata(),  # type: ignore[no-untyped-call]
+    default_parameter=Parameter(negative=()),
 )
-def getnative(
-    input_file: Annotated[SPath, input_file_arg],
-    range_dim: Annotated[tuple[int, int] | None, range_dim_opt] = None,
-    dim_mode: Annotated[Literal["height", "width"], dim_mode_opt] = "height",
-    kernel: Annotated[ComplexKernel, kernel_opt] = cast(ComplexKernel, "bilinear"),  # noqa: B008
-    linear: Annotated[bool, linear_opt] = False,
-    frame: Annotated[int, frame_opt] = 0,
-    step: Annotated[float, step_opt] = 1,
-    base_parity: Annotated[Literal["odd", "even"], base_parity_opt] = "even",
-    crop: Annotated[tuple[int, int, int, int] | None, crop_opt] = None,
-    metric_mode: Annotated[funcs.MetricMode, metric_mode_opt] = "MAE",
-    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),  # noqa: B008
-) -> None:
-    import numpy as np
-    from PySide6.QtWidgets import QApplication, QMainWindow, QStyle
+exclusive_group = Group("Command Options", sort_key=5)
 
-    from ..plotting import RescalePlotWidget
+
+@app.meta.default
+def main_meta(
+    *tokens: Annotated[str, Parameter(show=False, allow_leading_hyphen=True)],
+    show_kernels: Annotated[bool, Parameter(group=helpers_group, show_default=False)] = False,
+    show_vskernels_flag: Annotated[
+        bool,
+        Parameter(name="show-vskernels", group=helpers_group, show_default=False),
+    ] = False,
+    show_masks_flag: Annotated[bool, Parameter(name="show-masks", group=helpers_group, show_default=False)] = False,
+    debug: Annotated[bool, Parameter(show=False)] = False,
+    global_debug: Annotated[bool, Parameter(show=False)] = False,
+) -> None:
+    """
+    Descale analysis tools for VapourSynth.
+
+    Args:
+        show_kernels: Show the default checked kernels for getscaler and exit.
+        show_vskernels_flag: Show the builtin supported kernels from vskernels and exit.
+        show_masks_flag: Show the supported edge masks from vsmasktools and exit.
+        debug: Enable debug output.
+        global_debug: Enable global debug output.
+    """
+    setup_logging()
+
+    if show_kernels:
+        show_default_kernels()
+    if show_vskernels_flag:
+        show_vskernels()
+    if show_masks_flag:
+        show_masks()
+    if debug:
+        getLogger((__package__ or "").split(".")[0]).setLevel(DEBUG)
+    if global_debug:
+        getLogger().setLevel(DEBUG)
+
+    app(tokens)
+
+
+@app.command(help_format="rich")
+def getnative(
+    input_file: InputFileArg,
+    /,
+    range_dim: Annotated[
+        tuple[int, int] | None,
+        Parameter(alias="-rd", help="The inclusive range of resolutions to test (START END).", group=exclusive_group),
+    ] = None,
+    dim_mode: DimModeOpt = "height",
+    kernel: KernelOpt = Bilinear(),  # noqa: B008
+    linear: LinearOpt = False,
+    frame: FrameOpt = 0,
+    step: Annotated[
+        float,
+        Parameter(
+            short_alias=True,
+            help="The increment step between resolutions in the tested range.",
+            group=exclusive_group,
+        ),
+    ] = 1,
+    base_parity: Annotated[
+        Literal["odd", "even"],
+        Parameter(alias="-bp", help="Base dimension parity for fractional descales.", group=exclusive_group),
+    ] = "even",
+    crop: CropOpt = None,
+    metric_mode: MetricModeOpt = "MAE",
+    indexer: IndexerOpt = BestSource,
+) -> None:
+    """
+    Determine the native resolution of upscaled material
+
+    Analyzes a range of dimensions to find which one produces the lowest error when inverse scaled.
+    Primary use case is finding the native resolution of upscaled anime.
+    """
+    progress = get_progress(console, transient=True)
+
+    with progress:
+        task = progress.add_task("Initializing imports...", total=None)
+
+        import numpy as np
+        from PySide6.QtWidgets import QApplication, QMainWindow, QStyle
+
+        from ..plotting import RescalePlotWidget
+
+        progress.update(task, visible=False)
 
     clip = get_videonode_from_input(input_file, indexer)
 
@@ -137,7 +180,6 @@ def getnative(
             assert_never(dim_mode)
 
     # Pretty progress
-    progress = get_progress(console)
     gtask_id = progress.add_task("Gathering data...", total=None)
 
     logger.debug(kernel)
@@ -150,14 +192,16 @@ def getnative(
             kernel,
             crop,
             metric_mode=metric_mode,
-            progress_cb=lambda curr, total: progress.update(gtask_id, completed=curr, total=total, visible=True),
+            progress_cb=lambda curr, total: progress.update(
+                gtask_id, completed=curr, total=total, refresh=True, visible=True
+            ),
         )
         progress.update(gtask_id, total=100, completed=100, refresh=True)
 
     dims, errors = zip(*results)
 
     # Show the plot window
-    app = QApplication(sys.argv)
+    qapp = QApplication(sys.argv)
     win = QMainWindow()
     win.setWindowTitle("Native Resolution Analysis")
     win.setWindowIcon(win.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
@@ -172,37 +216,51 @@ def getnative(
     plot.axis_x.setLabelFormat(x_label_fmt)
 
     win.setCentralWidget(plot)
-
     win.show()
-    app.exec()
+
+    raise SystemExit(qapp.exec())
 
 
 @app.command(
-    help="[bold]Identify the best inverse scaler for a given resolution.[/]\n\n"
-    "Compares multiple kernels against a specific target resolution to determine which one "
-    "was likely used for the original upscaling.",
-    epilog="""
-[dim]Notes:
-
- - getscaler gives heuristic results; it's not infallible.
-
- - Always visually verify the suggested scaler and parameters on multiple frames before trusting them.[/dim]
+    help_format="rich",
+    help_epilogue="""[dim]Notes:
+- getscaler gives heuristic results; it's not infallible.
+- Always visually verify the suggested scaler and parameters on multiple frames before trusting them.
+[/dim]
 """,
-    no_args_is_help=True,
 )
 def getscaler(
-    input_file: Annotated[SPath, input_file_arg],
-    dim: Annotated[float, dim_opt],
-    dim_mode: Annotated[Literal["height", "width"], dim_mode_opt] = "height",
-    base_dim_opt: Annotated[int | None, base_dim_opt] = None,
-    kernels: Annotated[list[ComplexKernel], kernel_opt] = [],  # noqa: B006
-    linear: Annotated[bool, linear_opt] = False,
-    frame: Annotated[int, frame_opt] = 0,
-    crop: Annotated[tuple[int, int, int, int] | None, crop_opt] = None,
-    metric_mode: Annotated[funcs.MetricMode, metric_mode_opt] = "MAE",
-    mask: Annotated[type[EdgeDetect] | None, mask_opt] = None,
-    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),  # noqa: B008
+    input_file: InputFileArg,
+    dim: Annotated[float, Parameter(name="NUMBER", converter=lambda type_, tokens: resolve_dimension(tokens[0].value))],
+    /,
+    dim_mode: DimModeOpt = "height",
+    base_dim: Annotated[int | None, Parameter(alias="-b", group=exclusive_group)] = None,
+    kernels: KernelsOpt = [],  # noqa: B006
+    linear: LinearOpt = False,
+    frame: FrameOpt = 0,
+    crop: CropOpt = None,
+    metric_mode: MetricModeOpt = "MAE",
+    mask: Annotated[
+        type[EdgeDetect] | None,
+        Parameter(
+            alias="-m",
+            converter=lambda type_, tokens: EdgeDetect.from_param(tokens[0].value),
+            group=exclusive_group,
+        ),
+    ] = None,
+    indexer: IndexerOpt = BestSource,
 ) -> None:
+    """
+    Identify the best inverse scaler for a given resolution.
+
+    Compares multiple kernels against a specific target resolution to determine which one
+    was likely used for the original upscaling.
+
+    Args:
+        dim: The suspected native resolution to verify.
+        base_dim: Base integer dimension if checking for fractional resolution.
+        mask: Edge-detection mask to reduce noise influence on the metric.
+    """
     clip = get_videonode_from_input(input_file, indexer)
 
     if linear:
@@ -213,7 +271,7 @@ def getscaler(
         "width": clip.width,
         "height": clip.height,
         dim_mode: dim,
-        f"base_{dim_mode}": base_dim_opt,
+        f"base_{dim_mode}": base_dim,
     }
 
     progress = Progress(
@@ -274,31 +332,43 @@ def getscaler(
     )
 
 
-@app.command(
-    help="[bold]Visualize the frequency distribution of a frame.[/]\n\n"
-    "Calculates the Discrete Cosine Transform (DCT) of the image rows/columns "
-    "to identify spikes that may indicate the native resolution or scaling artifacts.",
-    no_args_is_help=True,
-)
+@app.command
 def getfreq(
-    input_file: Annotated[SPath, input_file_arg],
-    frame: Annotated[int, frame_opt] = 0,
-    cull_rate: Annotated[float, cull_rate_opt] = 3.0,
-    radius: Annotated[int, radius_opt] = 50,
-    linear: Annotated[bool, linear_opt] = False,
-    indexer: Annotated[Indexer, indexer_opt] = cast(Indexer, "bs"),  # noqa: B008
+    input_file: InputFileArg,
+    /,
+    frame: FrameOpt = 0,
+    cull_rate: Annotated[float, Parameter(alias="-cr", group=exclusive_group)] = 3.0,
+    radius: Annotated[int, Parameter(short_alias=True, group=exclusive_group)] = 50,
+    linear: LinearOpt = False,
+    indexer: IndexerOpt = BestSource,
 ) -> None:
-    from PySide6.QtWidgets import QApplication, QMainWindow, QStyle
+    """
+    Visualize the frequency distribution of a frame.
 
-    from ..funcs import get_dct_distribution
-    from ..plotting import FrequencyPlotWidget
+    Calculates the Discrete Cosine Transform (DCT) of the image rows/columns to identify spikes
+    that may indicate the native resolution or scaling artifacts.
+
+    Args:
+        cull_rate: Cull the sides/top of the frame to focus on the center.
+        radius: Radius for finding peaks/spikes in the frequency plot.
+    """
+    progress = get_progress(console, transient=True)
+
+    with progress:
+        task = progress.add_task("Initializing imports...", total=None)
+
+        from PySide6.QtWidgets import QApplication, QMainWindow, QStyle
+
+        from ..funcs import get_dct_distribution
+        from ..plotting import FrequencyPlotWidget
+
+        progress.update(task, visible=False)
 
     clip = get_videonode_from_input(input_file, indexer)
 
     if linear:
         clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
 
-    progress = get_progress(console)
     task = progress.add_task("Calculating DCT distribution...", total=None)
 
     with progress:
@@ -309,7 +379,7 @@ def getfreq(
     min_val_v, max_val_v = int(clip.height * LOW_RATE), int(clip.height * HIGH_RATE)
 
     # Show the plot window
-    app = QApplication(sys.argv)
+    qapp = QApplication(sys.argv)
     win = QMainWindow()
     win.setWindowTitle("Frequency Analysis")
     win.setWindowIcon(win.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
@@ -329,4 +399,8 @@ def getfreq(
     win.setCentralWidget(plot)
 
     win.show()
-    app.exec()
+    qapp.exec()
+
+
+def main() -> None:
+    app.meta()

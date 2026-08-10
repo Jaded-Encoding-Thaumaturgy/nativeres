@@ -33,7 +33,7 @@ dependencies = [
     "vsjetengine>=1.2.0",
     "vapoursynth>=75",
     "vsjetpack[source,kernels]>=1.5.0",
-    "typer>=0.24.0",
+    "cyclopts>=4.22.5",
     "rich>=15.0.0",
     "pyside6>=6.11.0",
     "numpy>=2.0.0",
@@ -42,7 +42,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.scripts]
-nativeres = "nativeres.cli:app"
+nativeres = "nativeres.cli:main"
 
 [project.urls]
 "Documentation" = "https://github.com/Jaded-Encoding-Thaumaturgy/nativeres/blob/master/README.md"
@@ -63,7 +63,6 @@ dev = [
     "vsstubs>=2.0.0",
     # Specify them to resolve transitive dependency resolution and uv index
     "vapoursynth-ffms2",
-    "vapoursynth-fmtconv",
 ]
 
 [tool.hatch.version]
@@ -81,7 +80,6 @@ members = ["src/plugin"]
 
 [tool.uv.sources]
 vapoursynth-ffms2 = { index = "vs-wheels" }
-vapoursynth-fmtconv = { index = "vs-wheels" }
 vsview-nativeres = { workspace = true }
 
 [[tool.uv.index]]
@@ -140,6 +138,3 @@ extend-select = [
     "RUF",
 ]
 ignore = ["N802", "N815"]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.*" = ["F401", "F403"]

@@ -1,13 +1,16 @@
-from logging import DEBUG, getLogger
-from typing import Any
+from inspect import isabstract
+from typing import Any, Literal, NoReturn
 
 from jetpytools import CustomValueError, SPath, get_subclasses
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn, TimeRemainingColumn
-from typer import BadParameter, Exit
+from vsengine import Policy
 from vskernels import ComplexKernel
+from vsmasktools import EdgeDetect
 from vssource import BestSource, CacheIndexer, Indexer
 from vstools import Matrix, vs
+
+from .logging import console
 
 
 # Callbacks
@@ -20,8 +23,27 @@ def resolve_dimension(value: str) -> float:
     return nb
 
 
+def get_all_idx() -> list[str]:
+    all_indexers = list[str]()
+
+    with Policy() as policy, policy.new_environment() as env, env.use():
+        for s in get_subclasses(Indexer):
+            if isabstract(s) or not hasattr(s, "_source_func"):
+                continue
+            all_indexers.append(s.__name__.lower())
+
+            source_func = getattr(s, "_source_func", None)
+            plugin = getattr(source_func, "plugin", None)
+            plugin_ns = getattr(plugin, "namespace", None)
+
+            if plugin_ns:
+                all_indexers.append(plugin_ns)
+
+    return all_indexers
+
+
 def resolve_idx(idx: str) -> Indexer:
-    indexer = Indexer.from_param(idx, BadParameter)
+    indexer = Indexer.from_param(idx, ValueError)
 
     args = dict[str, Any]()
 
@@ -35,54 +57,51 @@ def resolve_idx(idx: str) -> Indexer:
     return indexer(**args)
 
 
-def resolve_dimension_mode(mode: str) -> str:
+def resolve_dimension_mode(mode: str) -> Literal["height", "width"]:
     match mode:
         case "height" | "h":
             return "height"
         case "width" | "w":
             return "width"
         case _:
-            raise BadParameter("Unknown dimension passed")
+            raise ValueError("Unknown dimension passed")
 
 
-def set_debug(value: bool) -> None:
-    if value:
-        getLogger((__package__ or "").split(".")[0]).setLevel(DEBUG)
+def show_default_kernels() -> NoReturn:
+    from ..kernels import default_kernels
+
+    for kernel in default_kernels:
+        console.print(str(kernel))
+
+    raise SystemExit(0)
 
 
-def set_global_debug(value: bool) -> None:
-    if value:
-        getLogger().setLevel(DEBUG)
+def show_vskernels() -> NoReturn:
+    all_kernels = {k for k in get_subclasses(ComplexKernel) if not k.is_abstract}
+
+    for kernel in sorted(all_kernels, key=lambda k: k.__name__):
+        console.print(kernel.__name__)
+
+    raise SystemExit(0)
 
 
-def show_default_kernels(value: bool) -> None:
-    if value:
-        from ..kernels import default_kernels
+def show_masks() -> NoReturn:
+    all_masks = {
+        s
+        for s in get_subclasses(EdgeDetect)  # type: ignore[type-abstract]
+        if not isabstract(s) and s.__module__.split(".")[-1] != "_abstract"
+    }
 
-        console = Console(stderr=True)
+    for kernel in sorted(all_masks, key=lambda k: k.__name__):
+        console.print(kernel.__name__)
 
-        for kernel in default_kernels:
-            console.print(str(kernel))
-
-        raise Exit(0)
-
-
-def show_vskernels(value: bool) -> None:
-    if value:
-        all_kernels = {k for k in get_subclasses(ComplexKernel) if not k.is_abstract}
-
-        console = Console(stderr=True)
-
-        for kernel in sorted(all_kernels, key=lambda k: k.__name__):
-            console.print(kernel.__name__)
-
-        raise Exit(0)
+    raise SystemExit(0)
 
 
 # Helpers
 def get_videonode_from_input(path: SPath, indexer: Indexer) -> vs.VideoNode:
     if not path.exists():
-        raise BadParameter(f"{path.to_str()!r} doesn't exist.")
+        raise ValueError(f"{path.to_str()!r} doesn't exist.")
 
     if path.suffix in (".py", ".vpy"):
         from vsengine import load_script
@@ -104,7 +123,7 @@ def get_videonode_from_input(path: SPath, indexer: Indexer) -> vs.VideoNode:
     return clip.resize.Bilinear(format=vs.GRAYS, matrix=Matrix.BT709, matrix_in=Matrix.from_video(clip))
 
 
-def get_progress(console: Console) -> Progress:
+def get_progress(console: Console, **kwargs: Any) -> Progress:
     return Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
@@ -112,4 +131,5 @@ def get_progress(console: Console) -> Progress:
         TimeElapsedColumn(),
         TimeRemainingColumn(),
         console=console,
+        **kwargs,
     )

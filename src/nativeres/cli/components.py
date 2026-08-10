@@ -1,176 +1,151 @@
+from typing import Annotated, Any, Literal
+
+from cyclopts import Group, Parameter, Token
+from cyclopts.help import DefaultFormatter, HelpPanel
 from jetpytools import SPath
-from typer import Argument, BadParameter, Option, Typer
-from vsmasktools import EdgeDetect
+from rich.console import Console, ConsoleOptions
+from vskernels import ComplexKernel
 
+from .. import funcs
 from ..funcs import resolve_kernel
-from .helpers import (
-    resolve_dimension,
-    resolve_dimension_mode,
-    resolve_idx,
-    set_debug,
-    set_global_debug,
-    show_default_kernels,
-    show_vskernels,
-)
+from .helpers import get_all_idx, resolve_dimension_mode, resolve_idx
 
-# DEBUG
-debug_opt = Option(
-    "--debug",
-    help="Enable debug output.",
-    hidden=True,
-    is_eager=True,
-    callback=set_debug,
-)
-global_debug_opt = Option(
-    "--global-debug",
-    help="Enable global debug output.",
-    hidden=True,
-    is_eager=True,
-    callback=set_global_debug,
-)
+# Groups
+common_group = Group("Common Options", sort_key=10)
+helpers_group = Group("Helper Options", sort_key=20)
 
 
-# App
-app = Typer(
-    name="nativeres",
-    rich_markup_mode="rich",
-    pretty_exceptions_enable=True,
-    add_completion=False,
-    no_args_is_help=True,
-)
+# Custom Converters
+def parse_kernels(type_: type[Any], tokens: list[Token]) -> list[ComplexKernel]:
+    res = list[ComplexKernel]()
 
-# Commons
-input_file_arg = Argument(
-    help="Path to the source material to analyze. "
-    "Supports videos, images, or VapourSynth scripts. For scripts, the first output is used.",
-    metavar="INPUT",
-    resolve_path=True,
-    parser=SPath,
-)
-frame_opt = Option(
-    "--frame",
-    "-f",
-    help="The specific frame number to extract and analyze from video inputs. Ignored for images.",
-    metavar="INTEGER",
-    rich_help_panel="Common",
-)
-kernel_opt = Option(
-    "--kernel",
-    "-k",
-    help="The kernel(s) to use for inverse scaling.\n\n"
-    "Can be a kernel name or a class call with parameters (e.g., 'Bicubic(b=0, c=0.5)').\n\n"
-    "Use --show-kernels for a list of available kernels.",
-    metavar="Kernel|Kernel(arg0=..., arg1=...)",
-    parser=lambda v: resolve_kernel(v, BadParameter),
-    rich_help_panel="Common",
-)
-
-dim_mode_opt = Option(
-    "--dim-mode",
-    "-dm",
-    help="Specifies whether to analyze based on the [bold]height[/] or [bold]width[/] of the frame.",
-    metavar="height|width|h|w",
-    parser=resolve_dimension_mode,
-    rich_help_panel="Common",
-)
-crop_opt = Option(
-    "--crop",
-    "-c",
-    help="Crop the input frame before analysis to remove black bars.\n\n"
-    "Format: [bold]LEFT RIGHT TOP BOTTOM[/] (e.g., '0 0 240 240').",
-    metavar="L R T B",
-    rich_help_panel="Common",
-)
-metric_mode_opt = Option(
-    "--metric-mode",
-    "-mm",
-    help="The mathematical metric used to compare scaling results.\n\n"
-    "- [bold]MAE[/] (Mean Absolute Error)\n\n"
-    "- [bold]MSE[/] (Mean Squared Error)\n\n"
-    "- [bold]RMSE[/] (Root Mean Squared Error)",
-    metavar="MAE|MSE|RMSE",
-    parser=lambda value: value.upper(),
-    rich_help_panel="Common",
-)
-indexer_opt = Option(
-    "--indexer",
-    "-idx",
-    help="The VapourSynth indexer used to load files.\n\nSpecifying the plugin namespace is also allowed (e.g., 'bs').",
-    metavar="STRING",
-    parser=resolve_idx,
-    show_default="BestSource",
-    rich_help_panel="Common",
-)
-linear_opt = Option(
-    "--linear",
-    "-l",
-    help="Whether to process rescale in linear light",
-    rich_help_panel="Common",
-)
-
-# Helpers
-show_default_kernels_opt = Option(
-    "--show-kernels",
-    help="Show the default checked kernels for getscaler and exit.",
-    is_eager=True,
-    show_default=False,
-    callback=show_default_kernels,
-    rich_help_panel="Helpers",
-)
-show_vskernels_opt = Option(
-    "--show-vskernels",
-    help="Show the builtin supported kernels from vskernels and exit.",
-    is_eager=True,
-    show_default=False,
-    callback=show_vskernels,
-    rich_help_panel="Helpers",
-)
-
-# getnative exclusive
-range_dim_opt = Option(
-    "--range-dim",
-    "-rd",
-    help="The inclusive range of resolutions to test.\n\nSpecify as [bold]START END[/] (e.g., '500 1080').",
-    metavar="INTEGER INTEGER",
-    show_default=False,
-)
-step_opt = Option("--step", "-s", help="The increment step between resolutions in the tested range.", metavar="NUMBER")
-base_parity_opt = Option("--base-parity", "-bp", help="Base dimension parity for fractional descales")
-
-# getscaler exclusive
-dim_opt = Argument(
-    help="The suspected native resolution to verify. "
-    "Use an integer for exact pixels (e.g., 720) or a float for sub-pixel dimensions (e.g., 719.8).",
-    metavar="NUMBER",
-    parser=resolve_dimension,
-)
-base_dim_opt = Option(
-    "--base-dim",
-    "-b",
-    help="Base integer dimension if checking for fractional resolution.",
-)
-mask_opt = Option(
-    "--mask",
-    "-m",
-    help="Edge-detection mask to reduce noise influence on the metric. "
-    "Pass a mask name (e.g., 'Prewitt') or a class name from vsmasktools.",
-    metavar="EDGEDETECT",
-    parser=EdgeDetect.from_param,
-)
+    for token in tokens:
+        for s in token.value.split(","):
+            res.append(resolve_kernel(s.strip(), ValueError))
+    return res
 
 
-# Frequency exclusive
-cull_rate_opt = Option(
-    "--cull-rate",
-    "-cr",
-    help="Cull the sides/top of the frame to focus on the center.",
-    metavar="NUMBER",
-    show_default=True,
-)
-radius_opt = Option(
-    "--radius",
-    "-r",
-    help="Radius for finding peaks/spikes in the frequency plot.",
-    metavar="INTEGER",
-    show_default=True,
-)
+def parse_dim_mode(type_: type[Any], tokens: list[Token]) -> Literal["height", "width"]:
+    return resolve_dimension_mode(tokens[0].value)
+
+
+def parse_crop(type_: type[Any], tokens: list[Token]) -> tuple[int, ...]:
+    raw_vals = [t.value for t in tokens]
+
+    match len(raw_vals):
+        case 4:
+            return tuple(int(v) for v in raw_vals)
+        case 1:
+            if len(raw_vals[0].split()) == 4:
+                return tuple(int(v) for v in raw_vals)
+
+    raise ValueError(f"Invalid crop parameters: {raw_vals}. Expected 4 integers (LEFT RIGHT TOP BOTTOM).")
+
+
+# Reusable Annotated Parameters
+InputFileArg = Annotated[
+    SPath,
+    Parameter(
+        name="INPUT",
+        help="Path to the source material to analyze. Supports videos, images, or VapourSynth scripts.",
+        show_default=False,
+        converter=lambda t, tokens: SPath(tokens[0].value),
+    ),
+]
+
+FrameOpt = Annotated[
+    int,
+    Parameter(
+        short_alias=True,
+        help="The specific frame number to extract and analyze from video inputs. Ignored for images.",
+        group=common_group,
+    ),
+]
+
+KernelOpt = Annotated[
+    ComplexKernel,
+    Parameter(
+        short_alias=True,
+        help="The kernel to use for inverse scaling. Can be a kernel name or a class call with parameters.",
+        converter=lambda type_, tokens: resolve_kernel(tokens[0].value if tokens else "", ValueError),
+        group=common_group,
+    ),
+]
+
+KernelsOpt = Annotated[
+    list[ComplexKernel],
+    Parameter(
+        name="kernel",
+        alias="-k",
+        help="The kernel(s) to use for inverse scaling. Can be a kernel name or a class call with parameters.",
+        converter=parse_kernels,
+        show_default=False,
+        group=common_group,
+    ),
+]
+
+DimModeOpt = Annotated[
+    Literal["height", "width"],
+    Parameter(
+        alias="-dm",
+        help="Specifies whether to analyze based on the height or width of the frame.",
+        converter=parse_dim_mode,
+        group=common_group,
+    ),
+]
+
+CropOpt = Annotated[
+    tuple[int, int, int, int] | None,
+    Parameter(
+        alias="-c",
+        help="Crop the input frame before analysis to remove black bars (LEFT RIGHT TOP BOTTOM).",
+        converter=parse_crop,
+        n_tokens=4,
+        group=common_group,
+    ),
+]
+
+MetricModeOpt = Annotated[
+    funcs.MetricMode,
+    Parameter(
+        alias="-mm",
+        help="The mathematical metric used to compare scaling results (MAE, MSE, RMSE).",
+        converter=lambda t, tokens: tokens[0].value.upper(),
+        group=common_group,
+    ),
+]
+
+IdxChoice: Any = Literal[*get_all_idx()]
+
+IndexerOpt = Annotated[
+    IdxChoice,
+    Parameter(
+        alias="-idx",
+        help="The VapourSynth indexer used to load files.",
+        converter=lambda type_, tokens: resolve_idx(tokens[0].value if tokens else "bs"),
+        show_choices=True,
+        show_default=lambda s: s.__name__,
+        group=common_group,
+    ),
+]
+
+LinearOpt = Annotated[
+    bool,
+    Parameter(
+        short_alias=True,
+        help="Whether to process rescale in linear light.",
+        negative="",
+        group=common_group,
+    ),
+]
+
+
+class CleanHelpFormatter(DefaultFormatter):
+    def __call__(self, console: Console, options: ConsoleOptions, panel: HelpPanel) -> None:
+        panel.entries = [
+            entry.copy(positive_names=entry.positive_names[1:])  # type: ignore[no-untyped-call]
+            if len(entry.positive_names) > 1 and not entry.positive_names[0].startswith("-")
+            else entry
+            for entry in panel.entries
+        ]
+        super().__call__(console, options, panel)

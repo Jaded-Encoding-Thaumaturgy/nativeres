@@ -1,87 +1,76 @@
+import contextlib
 import os
-import shlex
 import sys
-import traceback
+from collections.abc import Sequence
+from pathlib import Path
 
+import cyclopts
 from rich.console import Console
-from rich.text import Text
-from typer.testing import CliRunner
 
-from nativeres.cli import app  # type: ignore[attr-defined]
-
-COLUMNS = 110
+from nativeres.cli import app as nativeres_app
 
 
-os.environ["FORCE_COLOR"] = "1"
-os.environ["COLUMNS"] = str(COLUMNS)
-os.environ["TERM"] = "xterm-256color"
+def discover_commands(app_obj: cyclopts.App, prefix: Sequence[str] | None = None) -> list[list[str]]:
+    prefix = prefix or []
+    commands = [[*prefix, "--help"]] if prefix else [["--help"]]
 
-font_injection = """
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700');
-.terminal { font-family: 'JetBrains Mono', Consolas, monospace !important; }
-"""
+    sub_keys = [k for k in app_obj if not k.startswith("-")]
+    for sub in sub_keys:
+        sub_app = app_obj[sub]
+        sub_prefix = [*prefix, sub]
+        commands.extend(discover_commands(sub_app, sub_prefix))
+
+    return commands
 
 
-def generate_svg(command: str = "") -> None:
-    runner = CliRunner()
+def generate_svg(command_args: Sequence[str], output_dir: Path, columns: int) -> Path:
+    os.environ["FORCE_COLOR"] = "1"
+    os.environ["COLUMNS"] = str(columns)
+    os.environ["TERM"] = "xterm-256color"
 
-    args = shlex.split(command) if command else ["--help"]
+    console = Console(record=True, width=columns, force_terminal=True, legacy_windows=False, safe_box=False)
 
-    result = runner.invoke(app, args, color=True)
+    with (
+        contextlib.suppress(SystemExit),
+        open(os.devnull, "w", encoding="utf-8") as devnull,
+        contextlib.redirect_stderr(devnull),
+        contextlib.redirect_stdout(devnull),
+    ):
+        nativeres_app.meta(command_args, console=console)
 
-    if result.exception:
-        print("ERROR: Command raised an exception!")
-        if result.stdout:
-            print("\nCaptured stdout:")
-            print(result.stdout)
-        if result.stderr:
-            print("\nCaptured stderr:")
-            print(result.stderr)
-
-        traceback.print_exception(type(result.exception), result.exception, result.exception.__traceback__)
-        return
-
-    output_text = result.stdout + result.stderr
-
-    if not output_text:
-        print("Failed to capture output!")
-        sys.exit(1)
-
-    # Force rounded boxes
-    output_text = output_text.replace("┌", "╭").replace("┐", "╮").replace("└", "╰").replace("┘", "╯")
-
-    if "\x1b" not in output_text:
-        print("⚠️ WARNING: Colors still stripped! Check your import path.")
+    if command_args == ["--help"]:
+        cmd_title = "nativeres --help"
+        file_name = "nativeres_help.svg"
     else:
-        print("✅ Success: ANSI Color codes captured natively from memory!")
+        sub_name = "_".join(arg for arg in command_args if arg != "--help")
+        cmd_title = f"nativeres {' '.join(command_args)}"
+        file_name = f"nativeres_{sub_name}_help.svg"
 
-    console = Console(record=True, width=COLUMNS, force_terminal=True, color_system="truecolor")
-    text = Text.from_ansi(output_text)
-    console.print(text)
+    output_path = output_dir / file_name
+    console.save_svg(output_path, title=cmd_title)
+    print(f"Saved: {output_path}", file=sys.stderr)
+    return output_path
 
-    cmd_name = args[0] if args else "nativeres"
-    svg_path = f"{cmd_name}_help.svg"
 
-    console.save_svg(svg_path, title=f"{command or 'nativeres'}")
+def main(output_dir: Path = Path("assets"), width: int = 110) -> None:
+    """Generate SVG help outputs for nativeres commands.
 
-    # THE FONT FIX
-    with open(svg_path, encoding="utf-8") as f:
-        svg_content = f.read()
+    Args:
+        output_dir: Directory to save generated SVG files.
+        width: Terminal width for rendered SVG
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    all_commands = discover_commands(nativeres_app)
 
-    svg_content = svg_content.replace("<style>\n", f"<style>\n{font_injection}")
+    print(f"Generating SVGs for {len(all_commands)} command(s)...", file=sys.stderr)
+    for cmd in all_commands:
+        generate_svg(cmd, output_dir=output_dir, columns=width)
 
-    with open(svg_path, "w", encoding="utf-8") as f:
-        f.write(svg_content)
-
-    print(f"Successfully generated {svg_path}!")
+    print("All SVGs generated successfully", file=sys.stderr)
 
 
 if __name__ == "__main__":
-    generate_svg()
-    generate_svg("getnative --help")
-    generate_svg("getscaler --help")
-    generate_svg("getfreq --help")
-
+    cyclopts.run(main)
     # generate_svg(
     #     'getscaler "00007.m2ts" 800 --frame 15000'
     # )
