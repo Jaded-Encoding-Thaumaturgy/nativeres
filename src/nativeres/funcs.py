@@ -377,7 +377,9 @@ def get_dct_distribution(
             .std.Transpose()
         )
 
-        rows = np.asarray(padded.get_frame(0)[0], dtype=np.float64)
+        with padded.get_frame(0) as frame:
+            rows = np.asarray(frame[0], copy=True, dtype=np.float64)
+
         rows_dct = scipy.fft.dct(rows, axis=-1)
         return np.mean(np.abs(rows_dct), axis=0)
 
