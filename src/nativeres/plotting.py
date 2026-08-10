@@ -8,7 +8,7 @@ from typing import Any, Literal
 import numpy as np
 from jetpytools import clamp
 from PySide6.QtCharts import QCategoryAxis, QChart, QChartView, QLineSeries, QScatterSeries, QValueAxis
-from PySide6.QtCore import QBuffer, QIODevice, QMargins, QMimeData, QPointF, Qt
+from PySide6.QtCore import QBuffer, QIODevice, QMargins, QMimeData, QPointF, Qt, Slot
 from PySide6.QtGui import (
     QAction,
     QColor,
@@ -209,6 +209,7 @@ class BasePlotWidget(QChartView):
         event.accept()
 
     @abstractmethod
+    @Slot()
     def reset_zoom(self) -> None: ...
 
     @abstractmethod
@@ -217,6 +218,7 @@ class BasePlotWidget(QChartView):
     @abstractmethod
     def serialize_csv(self) -> Iterable[Iterable[Any]]: ...
 
+    @Slot(bool)
     def on_export_json(self, checked: bool = False, filename: str | None = None) -> None:
         path, _ = QFileDialog.getSaveFileName(
             self,
@@ -229,6 +231,7 @@ class BasePlotWidget(QChartView):
                 json.dump(self.serialize_json(), f, indent=2)
             logger.info("Exported JSON to %s", path)
 
+    @Slot(bool)
     def on_export_csv(self, checked: bool = False, filename: str | None = None) -> None:
         path, _ = QFileDialog.getSaveFileName(
             self,
@@ -242,6 +245,7 @@ class BasePlotWidget(QChartView):
                 writer.writerows(self.serialize_csv())
             logger.info("Exported CSV to %s", path)
 
+    @Slot(bool)
     def on_export_png(self, checked: bool = False, filename: str | None = None) -> None:
         path, _ = QFileDialog.getSaveFileName(
             self,
@@ -253,6 +257,7 @@ class BasePlotWidget(QChartView):
             self.render_to_image().save(path, "PNG")  # type: ignore[call-overload]
             logger.info("Exported PNG to %s", path)
 
+    @Slot(bool)
     def on_export_svg(self, checked: bool = False, filename: str | None = None) -> None:
         path, _ = QFileDialog.getSaveFileName(
             self,
@@ -264,14 +269,17 @@ class BasePlotWidget(QChartView):
             self.render_to_svg(file=path)
             logger.info("Exported SVG to %s", path)
 
+    @Slot()
     def copy_json(self) -> None:
         QApplication.clipboard().setText(json.dumps(self.serialize_json(), indent=2))
         logger.info("Copied JSON to clipboard")
 
+    @Slot()
     def copy_csv(self) -> None:
         QApplication.clipboard().setText("\n".join(",".join(map(str, row)) for row in self.serialize_csv()))
         logger.info("Copied CSV to clipboard")
 
+    @Slot()
     def copy_png(self) -> None:
         image = self.render_to_image()
 
@@ -288,6 +296,7 @@ class BasePlotWidget(QChartView):
         QApplication.clipboard().setMimeData(mime_data)
         logger.info("Copied PNG to clipboard")
 
+    @Slot()
     def copy_svg(self) -> None:
         buffer = QBuffer(self)
         buffer.open(QIODevice.OpenModeFlag.WriteOnly)
@@ -461,6 +470,7 @@ class RescalePlotWidget(BasePlotWidget):
         super().resizeEvent(event)
         self.axis_y_title.update_from_chart(self.chart())
 
+    @Slot()
     def reset_zoom(self) -> None:
         self.axis_x.setRange(*self.initial_x_range)
         self.axis_y.setRange(*self.initial_y_range)
@@ -475,6 +485,7 @@ class RescalePlotWidget(BasePlotWidget):
         yield [f"{self.dimension_mode}", "Error"]
         yield from zip(self.dims, self.errors)
 
+    @Slot(float, float)
     def _update_y_ticks(self, y_min: float, y_max: float) -> None:
         for label in self.axis_y.categoriesLabels():
             self.axis_y.remove(label)
@@ -675,6 +686,7 @@ class FrequencyPlotWidget(BasePlotWidget):
         super().resizeEvent(event)
         self.axis_y_title.update_from_chart(self.chart())
 
+    @Slot()
     def reset_zoom(self) -> None:
         self.axis_x_h.setRange(*self.initial_xh_range)
         self.axis_x_v.setRange(*self.initial_xv_range)

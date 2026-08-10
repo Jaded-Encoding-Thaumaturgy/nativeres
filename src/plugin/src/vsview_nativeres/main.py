@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 import vapoursynth as vs
 from jetpytools import fallback, mod2
-from PySide6.QtCore import QSignalBlocker, QTimer, Signal
+from PySide6.QtCore import QSignalBlocker, QTimer, Signal, Slot
 from PySide6.QtGui import QPalette, Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -252,6 +252,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         icon = (IconName.FILE_IMPORT, self.palette().color(QPalette.ColorGroup.Normal, QPalette.ColorRole.ButtonText))
         self.import_btn.setIcon(self.make_icon(icon))
 
+    @Slot()
     def _set_default_values(self) -> None:
         self.dimension.index = 1
         self.base_parity.index = 1
@@ -319,6 +320,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
         self.update_limits()
 
+    @Slot()
     def snapshot_ui_values(self) -> None:
         self.settings.local_.getnative.last_dimension = self.dimension.index
         self.settings.local_.getnative.last_base_parity = self.base_parity.index
@@ -330,6 +332,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         self.settings.local_.getnative.last_kernel = resolve_kernel(self.kernels_cb.currentText())
         self.settings.local_.getnative.last_metric = self.metrics_cb.currentText()
 
+    @Slot()
     def on_global_settings_changed(self) -> None:
         kernel = self.kernels_cb.currentText()
         self.kernels_cb.clear()
@@ -368,6 +371,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             self.range_max_spin_w.setMinimum(self.range_min_spin_w.value() + 1)
             self.range_min_spin_w.setMaximum(self.range_max_spin_w.value() - 1)
 
+    @Slot(int)
     def on_range_min_h_changed(self, value: int) -> None:
         clip = self.api.current_voutput.vs_output.clip
         w_val = get_w(value, clip, 1)
@@ -376,6 +380,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             self.range_min_spin_w.setValue(w_val)
             self.range_max_spin_w.setMinimum(w_val + 1)
 
+    @Slot(int)
     def on_range_max_h_changed(self, value: int) -> None:
         clip = self.api.current_voutput.vs_output.clip
         w_val = get_w(value, clip, 1)
@@ -384,6 +389,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             self.range_max_spin_w.setValue(w_val)
             self.range_min_spin_w.setMaximum(w_val - 1)
 
+    @Slot(int)
     def on_range_min_w_changed(self, value: int) -> None:
         clip = self.api.current_voutput.vs_output.clip
         h_val = get_h(value, clip, 1)
@@ -392,6 +398,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             self.range_min_spin_h.setValue(h_val)
             self.range_max_spin_h.setMinimum(h_val + 1)
 
+    @Slot(int)
     def on_range_max_w_changed(self, value: int) -> None:
         clip = self.api.current_voutput.vs_output.clip
         h_val = get_h(value, clip, 1)
@@ -400,14 +407,17 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             self.range_max_spin_h.setValue(h_val)
             self.range_min_spin_h.setMaximum(h_val - 1)
 
+    @Slot(int)
     def on_dimension_segment_changed(self, index: int) -> None:
         if self._last_dimension == index:
             return
         self._update_dimension_stack(index)
 
+    @Slot(int)
     def on_base_parity_segment_changed(self, index: int) -> None:
         self._last_base_parity = index
 
+    @Slot()
     def on_calculate_clicked(self) -> None:
         self.calculate_btn.setDisabled(True)
 
@@ -529,6 +539,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
         return plot
 
+    @Slot()
     def on_import_btn_clicked(self) -> None:
         files, _ = QFileDialog.getOpenFileNames(
             self,
@@ -567,11 +578,13 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             result_item.setData(self.IMPORT_PLOT_ROLE, plot)
             result_item.setData(self.IMPORT_FRAME_ROLE, None)
 
+    @Slot(QListWidgetItem)
     def on_import_item_clicked(self, item: QListWidgetItem) -> None:
         if plot := item.data(self.IMPORT_PLOT_ROLE):
             self.plot_stack.setCurrentWidget(plot)
             self.canvas.setCurrentWidget(self.plot_stack)
 
+    @Slot(QListWidgetItem)
     def on_import_item_double_clicked(self, item: QListWidgetItem) -> None:
         self.on_import_item_clicked(item)
 
@@ -722,6 +735,7 @@ class GetScalerTab(TabContainer):
             if (mask := self.settings.local_.getscaler.last_mask) is not None:
                 self.mask_cb.setCurrentText(mask)
 
+    @Slot()
     def snapshot_ui_values(self) -> None:
         self.settings.local_.getscaler.last_dimension = self.dimension.index
         self.settings.local_.getscaler.last_target_dimension = self.target_dimension.value()
@@ -738,6 +752,7 @@ class GetScalerTab(TabContainer):
         with QSignalBlocker(self.target_dimension):
             self.target_dimension.setMaximum(max_dim)
 
+    @Slot(int)
     def on_segment_changed(self, index: int) -> None:
         if self._last_dimension == index:
             return
@@ -758,6 +773,7 @@ class GetScalerTab(TabContainer):
             self.update_limits()
             self.target_dimension.setValue(func(v, clip, 1))
 
+    @Slot()
     def on_calculate_clicked(self) -> None:
         self.calculate_btn.setDisabled(True)
         self.table.clearContents()
@@ -884,6 +900,7 @@ class GetFreqTab(TabContainer):
         self.api.globalSettingsChanged.connect(self.on_global_settings_changed)
         self.api.register_on_destroy(self.on_destroy)
 
+    @Slot()
     def on_global_settings_changed(self) -> None:
         if self.plot:
             self.plot.set_theme(
@@ -899,12 +916,14 @@ class GetFreqTab(TabContainer):
             self.plot.deleteLater()
             self.plot = None
 
+    @Slot(int)
     def on_radius_changed(self, value: int) -> None:
         if self.plot:
             self.plot.check_radius = value
             self.plot.set_spikes_h()
             self.plot.set_spikes_v()
 
+    @Slot()
     def on_calculate_clicked(self) -> None:
         clip = self.api.current_voutput.vs_output.clip
         frame = self.api.current_frame
@@ -1021,6 +1040,7 @@ class NativeResPlugin(WidgetPluginBase[GlobalSettings, LocalSettings]):
     def on_playback_stopped(self) -> None:
         self.update_ui()
 
+    @Slot(QGraphicsView)
     @run_in_background(name="DumpPlotResults")
     def dump_plot_results(self, plot: CustomRescalePlotWidget) -> None:
         if path := self.api.get_local_storage(self):
