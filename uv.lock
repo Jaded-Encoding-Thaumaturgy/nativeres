@@ -398,7 +398,7 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.16.0" },
     { name = "vapoursynth", specifier = ">=75" },
     { name = "vsjetengine", specifier = ">=1.2.0" },
-    { name = "vsjetpack", extras = ["kernels", "source"], specifier = ">=1.5.0" },
+    { name = "vsjetpack", extras = ["kernels", "source"], specifier = ">=2.2.2" },
     { name = "vsview-nativeres", marker = "extra == 'plugin'", editable = "src/plugin" },
 ]
 provides-extras = ["plugin"]
@@ -1169,7 +1169,7 @@ wheels = [
 
 [[package]]
 name = "vsjetpack"
-version = "2.2.1"
+version = "2.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jetpytools" },
@@ -1181,9 +1181,9 @@ dependencies = [
     { name = "vapoursynth-akarin" },
     { name = "vapoursynth-vszip" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/55/38/2df0d240d22ac5523f20ab0f71078b91d703eccc09fd6c028164ad6a1cdf/vsjetpack-2.2.1.tar.gz", hash = "sha256:f061cae7c554f5c6ec65d5e397de02a87180a65a271a548cfc3872612a2ccb59", size = 604205, upload-time = "2026-08-14T14:50:09.203Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/4d/4deb6e2361af3c9e5ef71b2991bf5e41265cbfbe2bb09b9a5f36dd3ba5aa/vsjetpack-2.2.2.tar.gz", hash = "sha256:178a65180f57d2a9dc4ac8c84b2b9c1ac25087b75e5851095446b24aea80e67b", size = 604242, upload-time = "2026-08-18T20:42:03.43Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/33/d2a83578874eaeaaf987f003e0e26454bb2fbb33437c655481d533500376/vsjetpack-2.2.1-py3-none-any.whl", hash = "sha256:24f8bf43da59ce787972532d4c381ce6b94f4f6ec8c61958b3593041abf5041d", size = 437169, upload-time = "2026-08-14T14:50:07.016Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/4a/3b04fec2b242c568411bb3749675cf823d41ad061b357e2a1c474aa08f93/vsjetpack-2.2.2-py3-none-any.whl", hash = "sha256:d20aa9a7c2324eaa43e157be9334d489c66969b14369da5c374ff264e391e635", size = 437217, upload-time = "2026-08-18T20:42:00.52Z" },
 ]
 
 [package.optional-dependencies]
