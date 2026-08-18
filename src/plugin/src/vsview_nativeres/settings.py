@@ -148,6 +148,7 @@ class GetNativeLocalSettings(BaseModel):
     last_max_w_range: int | None = None
     last_step: float | None = None
     last_kernel: PydanticKernel | None = None
+    last_sample_grid_model: int | None = None
     last_metric: str | None = None
 
 
@@ -158,6 +159,7 @@ class GetScalerLocalSettings(BaseModel):
     last_target_dimension: float | None = None
     last_metric: str | None = None
     last_mask: str | None = None
+    last_sample_grid_model: int | None = None
 
 
 class LocalSettings(BaseModel):

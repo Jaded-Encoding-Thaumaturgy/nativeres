@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QGraphicsView,
     QHBoxLayout,
     QHeaderView,
+    QLabel,
     QListWidgetItem,
     QMessageBox,
     QPushButton,
@@ -174,6 +175,12 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         self.kernels_cb = QComboBox(self.controls_section)
         self.kernels_cb.setToolTip("Descale kernel used for each candidate resolution test.")
         kernels_layout = self.make_vgroup("Kernel", self.kernels_cb, parent=self.controls_section, stretch=False)
+        self.sample_grid_model_cb = QComboBox(self.controls_section)
+        self.sample_grid_model_cb.addItems(["Edges", "Centers"])
+        self.sample_grid_model_cb.setToolTip("Sampling grid alignment model.")
+        sample_grid_model_layout = QHBoxLayout()
+        sample_grid_model_layout.addWidget(QLabel("Sample Grid Model", self.controls_section))
+        sample_grid_model_layout.addWidget(self.sample_grid_model_cb)
         self.metrics_cb = QComboBox(self.controls_section)
         self.metrics_cb.addItems(MetricMode.__value__.__args__)
         self.metrics_cb.setToolTip(
@@ -182,13 +189,13 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         )
         metrics_layout = self.make_vgroup("Metric", self.metrics_cb, parent=self.controls_section, stretch=False)
 
-        self.kernels_metrics_layout = QVBoxLayout()
-        self.kernels_metrics_layout.addLayout(kernels_layout)
-        self.kernels_metrics_layout.addSpacing(self.range_max_stack.height() + 4)
-        self.kernels_metrics_layout.addLayout(metrics_layout)
-        self.kernels_metrics_layout.addStretch()
+        self.opts_layout = QVBoxLayout()
+        self.opts_layout.addLayout(kernels_layout)
+        self.opts_layout.addLayout(sample_grid_model_layout)
+        self.opts_layout.addLayout(metrics_layout)
+        self.opts_layout.addStretch()
 
-        controls.addLayout(self.kernels_metrics_layout, 1)
+        controls.addLayout(self.opts_layout, 1)
 
         self.import_btn = QPushButton("Import...", self)
         self.import_btn.setToolTip("Import saved getnative result plots from JSON or CSV files.")
@@ -277,6 +284,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             for k in self.settings.global_.kernels:
                 self.kernels_cb.addItem(k.pretty_string, k)
             self.kernels_cb.setCurrentText("Bilinear()")
+            self.sample_grid_model_cb.setCurrentIndex(0)
             self.metrics_cb.setCurrentText("MAE")
 
         self.update_limits()
@@ -290,6 +298,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             QSignalBlocker(self.range_max_spin_w),
             QSignalBlocker(self.step_spin),
             QSignalBlocker(self.kernels_cb),
+            QSignalBlocker(self.sample_grid_model_cb),
             QSignalBlocker(self.metrics_cb),
         ):
             if (d := self.settings.local_.getnative.last_dimension) is not None:
@@ -315,6 +324,9 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             if (kernel := self.settings.local_.getnative.last_kernel) is not None:
                 self.kernels_cb.setCurrentText(kernel.pretty_string)
 
+            if (sample_grid_model := self.settings.local_.getnative.last_sample_grid_model) is not None:
+                self.sample_grid_model_cb.setCurrentIndex(sample_grid_model)
+
             if (metric := self.settings.local_.getnative.last_metric) is not None:
                 self.metrics_cb.setCurrentText(metric)
 
@@ -330,6 +342,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         self.settings.local_.getnative.last_min_w_range = self.range_min_spin_w.value()
         self.settings.local_.getnative.last_step = self.step_spin.value()
         self.settings.local_.getnative.last_kernel = resolve_kernel(self.kernels_cb.currentText())
+        self.settings.local_.getnative.last_sample_grid_model = self.sample_grid_model_cb.currentIndex()
         self.settings.local_.getnative.last_metric = self.metrics_cb.currentText()
 
     @Slot()
@@ -465,6 +478,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
 
         frame = self.api.current_frame
         kernel = self.kernels_cb.currentData()
+        sample_grid_model = self.sample_grid_model_cb.currentIndex()
         metric_mode = cast(MetricMode, self.metrics_cb.currentText())
         title = f"{self.api.current_voutput.vs_name} - {kernel.pretty_string} on {dim_mode.lower()} - frame {frame}"
 
@@ -480,6 +494,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
                     frame,
                     dimensions,  # type: ignore[arg-type]
                     kernel,
+                    sample_grid_model=sample_grid_model,
                     metric_mode=metric_mode,
                     progress_cb=(
                         lambda current, total: self.progress_bar.update_progress(
@@ -668,12 +683,23 @@ class GetScalerTab(TabContainer):
         self.metrics_cb.setToolTip("Error metric used when ranking kernels.")
         metrics_layout = self.make_vgroup("Metric", self.metrics_cb, parent=self.controls_section)
 
+        controls.addLayout(metrics_layout)
+
         self.mask_cb = QComboBox(self.controls_section)
         self.mask_cb.setToolTip("Edge-detection mask to reduce noise influence on the metric.")
         mask_layout = self.make_vgroup("Mask", self.mask_cb, parent=self.controls_section)
 
-        controls.addLayout(metrics_layout)
-        controls.addLayout(mask_layout, 1)
+        self.sample_grid_model_cb = QComboBox(self.controls_section)
+        self.sample_grid_model_cb.addItems(["Edges", "Centers"])
+        self.sample_grid_model_cb.setToolTip("Sampling grid alignment model.")
+        sample_grid_model_layout = QHBoxLayout()
+        sample_grid_model_layout.addWidget(QLabel("Sample Grid Model", self.controls_section))
+        sample_grid_model_layout.addWidget(self.sample_grid_model_cb)
+
+        opts_layout = QVBoxLayout()
+        opts_layout.addLayout(mask_layout)
+        opts_layout.addLayout(sample_grid_model_layout)
+        controls.addLayout(opts_layout, 1)
 
         self.calculate_btn = QPushButton("Calculate", self)
         self.calculate_btn.setToolTip("Run getscaler on the current frame with the selected target dimension.")
@@ -719,6 +745,7 @@ class GetScalerTab(TabContainer):
                 self.mask_cb.addItem(s.__name__, s)
             self.mask_cb.insertItem(0, "", None)
             self.mask_cb.setCurrentText("")
+            self.sample_grid_model_cb.setCurrentIndex(0)
 
     def _set_saved_values(self) -> None:
         with QSignalBlocker(self.dimension), QSignalBlocker(self.target_dimension), QSignalBlocker(self.metrics_cb):
@@ -735,12 +762,16 @@ class GetScalerTab(TabContainer):
             if (mask := self.settings.local_.getscaler.last_mask) is not None:
                 self.mask_cb.setCurrentText(mask)
 
+            if (sample_grid_model := self.settings.local_.getscaler.last_sample_grid_model) is not None:
+                self.sample_grid_model_cb.setCurrentIndex(sample_grid_model)
+
     @Slot()
     def snapshot_ui_values(self) -> None:
         self.settings.local_.getscaler.last_dimension = self.dimension.index
         self.settings.local_.getscaler.last_target_dimension = self.target_dimension.value()
         self.settings.local_.getscaler.last_metric = self.metrics_cb.currentText()
         self.settings.local_.getscaler.last_mask = self.mask_cb.currentText()
+        self.settings.local_.getscaler.last_sample_grid_model = self.sample_grid_model_cb.currentIndex()
 
     def _get_max_dim(self) -> int:
         clip = self.api.current_voutput.vs_output.clip
@@ -783,6 +814,7 @@ class GetScalerTab(TabContainer):
         kernels = self.settings.global_.kernels
         metric_mode = cast(MetricMode, self.metrics_cb.currentText())
         mask = self.mask_cb.currentData()
+        sample_grid_model = self.sample_grid_model_cb.currentIndex()
 
         match self.dimension.index:
             case 0:
@@ -802,6 +834,7 @@ class GetScalerTab(TabContainer):
                     height,
                     kernels,
                     metric_mode=metric_mode,
+                    sample_grid_model=sample_grid_model,
                     mask=mask,
                     func=self.on_calculate_clicked,
                 )
