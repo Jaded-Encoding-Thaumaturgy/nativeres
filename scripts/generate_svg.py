@@ -44,7 +44,7 @@ def generate_svg(command_args: Sequence[str], output_dir: Path, columns: int) ->
     else:
         sub_name = "_".join(arg for arg in command_args if arg != "--help")
         cmd_title = f"nativeres {' '.join(command_args)}"
-        file_name = f"nativeres_{sub_name}_help.svg"
+        file_name = f"{sub_name}_help.svg"
 
     output_path = output_dir / file_name
     console.save_svg(output_path, title=cmd_title)
