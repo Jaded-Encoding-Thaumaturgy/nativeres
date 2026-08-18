@@ -93,6 +93,8 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         controls = self.controls_section.add_hlayout()
 
         self.dimension = SegmentedControl(["Width", "Height"], self.controls_section)
+        for btn in self.dimension.buttons:
+            btn.setFixedHeight(24 + 2)
         self.dimension.current_layout.setContentsMargins(0, 0, 0, 0)
         self.dimension.current_layout.setSpacing(0)
         self.dimension.setToolTip("Choose whether to scan candidate source widths or source heights.")
@@ -101,6 +103,8 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         dimension_layout = self.make_vgroup("Dimension", self.dimension, parent=self.controls_section)
 
         self.base_parity = SegmentedControl(["Odd", "Even"], self.controls_section)
+        for btn in self.base_parity.buttons:
+            btn.setFixedHeight(24 + 2)
         self.base_parity.current_layout.setContentsMargins(0, 0, 0, 0)
         self.base_parity.current_layout.setSpacing(0)
         self.base_parity.setToolTip(
@@ -112,6 +116,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         base_parity_layout = self.make_vgroup("Base Parity", self.base_parity, parent=self.controls_section)
 
         self.reset_values_btn = QPushButton("Reset Controls", self.controls_section)
+        self.reset_values_btn.setFixedHeight(24 + 2)
         self.reset_values_btn.setToolTip("Restore the default range, step, kernel, and metric for the current clip.")
         self.reset_values_btn.clicked.connect(self._set_default_values)
 
