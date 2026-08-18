@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
 from cyclopts import Group, Parameter, Token
@@ -5,6 +6,7 @@ from cyclopts.help import DefaultFormatter, HelpPanel
 from jetpytools import SPath
 from rich.console import Console, ConsoleOptions
 from vskernels import ComplexKernel
+from vssource import BestSource
 
 from .. import funcs
 from ..funcs import resolve_kernel
@@ -143,6 +145,23 @@ SampleGridModelOpt = Annotated[
     Literal["edges", "centers", 0, 1],
     Parameter(help="Sampling grid alignment model.", group=common_group),
 ]
+
+
+@Parameter(name="*")
+@dataclass(kw_only=True, frozen=True)
+class CommonOpts:
+    frame: FrameOpt = 0
+    linear: LinearOpt = False
+    indexer: IndexerOpt = BestSource
+
+
+@Parameter(name="*")
+@dataclass(kw_only=True, frozen=True)
+class RescaleOpts(CommonOpts):
+    dim_mode: DimModeOpt = "height"
+    sample_grid_model: SampleGridModelOpt = "edges"
+    crop: CropOpt = None
+    metric_mode: MetricModeOpt = "MAE"
 
 
 class CleanHelpFormatter(DefaultFormatter):

@@ -14,7 +14,6 @@ from rich.style import Style
 from rich.table import Table
 from vskernels import Bilinear, SampleGridModel
 from vsmasktools import EdgeDetect
-from vssource import BestSource
 from vstools import vs
 
 from .. import funcs
@@ -22,16 +21,11 @@ from ..constants import HIGH_RATE, LOW_RATE
 from ..kernels import default_kernels
 from .components import (
     CleanHelpFormatter,
-    CropOpt,
-    DimModeOpt,
-    FrameOpt,
-    IndexerOpt,
+    CommonOpts,
     InputFileArg,
     KernelOpt,
     KernelsOpt,
-    LinearOpt,
-    MetricModeOpt,
-    SampleGridModelOpt,
+    RescaleOpts,
     helpers_group,
 )
 from .helpers import (
@@ -97,15 +91,13 @@ def main_meta(
 def getnative(
     input_file: InputFileArg,
     /,
+    *,
+    opts: RescaleOpts = RescaleOpts(),  # noqa: B008
     range_dim: Annotated[
         tuple[int, int] | None,
         Parameter(alias="-rd", help="The inclusive range of resolutions to test (START END).", group=exclusive_group),
     ] = None,
-    dim_mode: DimModeOpt = "height",
     kernel: KernelOpt = Bilinear(),  # noqa: B008
-    linear: LinearOpt = False,
-    sample_grid_model: SampleGridModelOpt = "edges",
-    frame: FrameOpt = 0,
     step: Annotated[
         float,
         Parameter(
@@ -118,9 +110,6 @@ def getnative(
         Literal["odd", "even"],
         Parameter(alias="-bp", help="Base dimension parity for fractional descales.", group=exclusive_group),
     ] = "even",
-    crop: CropOpt = None,
-    metric_mode: MetricModeOpt = "MAE",
-    indexer: IndexerOpt = BestSource,
 ) -> None:
     """
     Determine the native resolution of upscaled material
@@ -140,22 +129,22 @@ def getnative(
 
         progress.update(task, visible=False)
 
-    clip = get_videonode_from_input(input_file, indexer)
+    clip = get_videonode_from_input(input_file, opts.indexer)
 
-    if linear:
+    if opts.linear:
         clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
 
     # Resolve dimension and the range of dimensions to check
     if range_dim:
         start, stop = range_dim
     else:
-        match dim_mode:
+        match opts.dim_mode:
             case "height":
                 dim = clip.height
             case "width":
                 dim = clip.width
             case _:
-                assert_never(dim_mode)
+                assert_never(opts.dim_mode)
 
         start, stop = int(dim * LOW_RATE), int(dim * HIGH_RATE)
 
@@ -173,18 +162,18 @@ def getnative(
             dims = [(d, mod2(ceil(d)) + 1) for d in dims]
 
     # Pair with the fixed dimension
-    match dim_mode:
+    match opts.dim_mode:
         case "height":
             dimensions = zip_longest([clip.width], dims, fillvalue=clip.width)
         case "width":
             dimensions = zip_longest(dims, [clip.height], fillvalue=clip.height)
         case _:
-            assert_never(dim_mode)
+            assert_never(opts.dim_mode)
 
     sgm = (
-        SampleGridModel[f"MATCH_{sample_grid_model.upper()}"]
-        if isinstance(sample_grid_model, str)
-        else sample_grid_model
+        SampleGridModel[f"MATCH_{opts.sample_grid_model.upper()}"]
+        if isinstance(opts.sample_grid_model, str)
+        else opts.sample_grid_model
     )
 
     # Pretty progress
@@ -195,11 +184,11 @@ def getnative(
     with progress:
         results = funcs.getnative(
             clip,
-            frame,
+            opts.frame,
             dimensions,  # type: ignore[arg-type]
             kernel,
-            crop,
-            metric_mode=metric_mode,
+            opts.crop,
+            metric_mode=opts.metric_mode,
             sample_grid_model=sgm,
             progress_cb=lambda curr, total: progress.update(
                 gtask_id, completed=curr, total=total, refresh=True, visible=True
@@ -218,10 +207,10 @@ def getnative(
     win.resize(1000, 600)
 
     plot = RescalePlotWidget(
-        f"Error plot - {kernel.pretty_string} on {dim_mode}",
-        [getattr(d, dim_mode) for d in dims],
+        f"Error plot - {kernel.pretty_string} on {opts.dim_mode}",
+        [getattr(d, opts.dim_mode) for d in dims],
         errors,
-        dim_mode.title(),
+        opts.dim_mode.title(),
     )
     plot.axis_x.setLabelFormat(x_label_fmt)
 
@@ -243,14 +232,10 @@ def getscaler(
     input_file: InputFileArg,
     dim: Annotated[float, Parameter(name="NUMBER", converter=lambda type_, tokens: resolve_dimension(tokens[0].value))],
     /,
-    dim_mode: DimModeOpt = "height",
+    *,
+    opts: RescaleOpts = RescaleOpts(),  # noqa: B008
     base_dim: Annotated[int | None, Parameter(alias="-b", group=exclusive_group)] = None,
     kernels: KernelsOpt = [],  # noqa: B006
-    linear: LinearOpt = False,
-    sample_grid_model: SampleGridModelOpt = "edges",
-    frame: FrameOpt = 0,
-    crop: CropOpt = None,
-    metric_mode: MetricModeOpt = "MAE",
     mask: Annotated[
         type[EdgeDetect] | None,
         Parameter(
@@ -259,7 +244,6 @@ def getscaler(
             group=exclusive_group,
         ),
     ] = None,
-    indexer: IndexerOpt = BestSource,
 ) -> None:
     """
     Identify the best inverse scaler for a given resolution.
@@ -272,23 +256,23 @@ def getscaler(
         base_dim: Base integer dimension if checking for fractional resolution.
         mask: Edge-detection mask to reduce noise influence on the metric.
     """
-    clip = get_videonode_from_input(input_file, indexer)
+    clip = get_videonode_from_input(input_file, opts.indexer)
 
-    if linear:
+    if opts.linear:
         clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
 
     # Resolve dimension to check
     scaler_args: dict[str, Any] = {
         "width": clip.width,
         "height": clip.height,
-        dim_mode: dim,
-        f"base_{dim_mode}": base_dim,
+        opts.dim_mode: dim,
+        f"base_{opts.dim_mode}": base_dim,
     }
 
     sgm = (
-        SampleGridModel[f"MATCH_{sample_grid_model.upper()}"]
-        if isinstance(sample_grid_model, str)
-        else sample_grid_model
+        SampleGridModel[f"MATCH_{opts.sample_grid_model.upper()}"]
+        if isinstance(opts.sample_grid_model, str)
+        else opts.sample_grid_model
     )
 
     progress = Progress(
@@ -302,10 +286,10 @@ def getscaler(
     with progress:
         ress = funcs.getscaler(
             clip,
-            frame,
+            opts.frame,
             kernels=(*default_kernels, *kernels),
-            crop=crop,
-            metric_mode=metric_mode,
+            crop=opts.crop,
+            metric_mode=opts.metric_mode,
             mask=mask,
             sample_grid_model=sgm,
             func=getscaler,
@@ -325,7 +309,7 @@ def getscaler(
     dheight = f"{height:.0f}" if float(height).is_integer() else f"{height:.3f}"
 
     table = Table(
-        title=f"Results for frame {frame} — Resolution: {dwidth}x{dheight}",
+        title=f"Results for frame {opts.frame} — Resolution: {dwidth}x{dheight}",
         title_style=Style(bold=True),
         caption=f"Smallest error archieved by {best.kernel.pretty_string}: {best.error:.13f}",
         caption_style=Style(bold=True, dim=True),
@@ -334,7 +318,7 @@ def getscaler(
     )
     table.add_column("Kernel")
     table.add_column("Error %", justify="center")
-    table.add_column(metric_mode, justify="right")
+    table.add_column(opts.metric_mode, justify="right")
 
     for res in sorted_ress:
         table.add_row(
@@ -355,11 +339,10 @@ def getscaler(
 def getfreq(
     input_file: InputFileArg,
     /,
-    frame: FrameOpt = 0,
+    *,
+    opts: CommonOpts = CommonOpts(),  # noqa: B008
     cull_rate: Annotated[float, Parameter(alias="-cr", group=exclusive_group)] = 3.0,
     radius: Annotated[int, Parameter(short_alias=True, group=exclusive_group)] = 50,
-    linear: LinearOpt = False,
-    indexer: IndexerOpt = BestSource,
 ) -> None:
     """
     Visualize the frequency distribution of a frame.
@@ -383,15 +366,15 @@ def getfreq(
 
         progress.update(task, visible=False)
 
-    clip = get_videonode_from_input(input_file, indexer)
+    clip = get_videonode_from_input(input_file, opts.indexer)
 
-    if linear:
+    if opts.linear:
         clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
 
     task = progress.add_task("Calculating DCT distribution...", total=None)
 
     with progress:
-        dct_h, dct_v = get_dct_distribution(clip, frame, cull_rate=cull_rate)
+        dct_h, dct_v = get_dct_distribution(clip, opts.frame, cull_rate=cull_rate)
         progress.update(task, completed=100, total=100, visible=False, refresh=True)
 
     min_val_h, max_val_h = int(clip.width * LOW_RATE), int(clip.width * HIGH_RATE)
