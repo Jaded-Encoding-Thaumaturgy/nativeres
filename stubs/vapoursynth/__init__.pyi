@@ -1977,13 +1977,13 @@ class _avs:
 # </implementation/avs>
 
 # <implementation/bs>
-_ReturnDict_bs_TrackInfo = TypedDict("_ReturnDict_bs_TrackInfo", {"mediatype": int, "mediatypestr": _AnyStr, "codec": int, "codecstr": _AnyStr, "disposition": int, "dispositionstr": _AnyStr})
+_ReturnDict_bs_TrackInfo = TypedDict("_ReturnDict_bs_TrackInfo", {"tracktype": _IntLike | list[_IntLike], "tracktypestr": _AnyStr | list[_AnyStr], "codec": _IntLike | list[_IntLike], "codecstr": _AnyStr | list[_AnyStr], "disposition": _IntLike | list[_IntLike], "dispositionstr": _AnyStr | list[_AnyStr]})
 
 class _bs:
     class _Core_bound:
         class Plugin(_VSPlugin):
             @_Wrapper.Function
-            def AudioSource(self, /, source: _AnyStr, track: _IntLike | None = None, adjustdelay: _IntLike | None = None, threads: _IntLike | None = None, enable_drefs: _IntLike | None = None, use_absolute_path: _IntLike | None = None, drc_scale: _FloatLike | None = None, cachemode: _IntLike | None = None, cachepath: _AnyStr | None = None, cachesize: _IntLike | None = None, showprogress: _IntLike | None = None, maxdecoders: _IntLike | None = None) -> AudioNode: ...
+            def AudioSource(self, /, source: _AnyStr, track: _IntLike | None = None, adjustdelay: _IntLike | None = None, threads: _IntLike | None = None, enable_drefs: _IntLike | None = None, use_absolute_path: _IntLike | None = None, drc_scale: _FloatLike | None = None, cachemode: _IntLike | None = None, cachepath: _AnyStr | None = None, cachesize: _IntLike | None = None, showprogress: _IntLike | None = None, maxdecoders: _IntLike | None = None, variableformat: _IntLike | None = None) -> AudioNode: ...
             @_Wrapper.Function
             def Metadata(self, /, source: _AnyStr, track: _IntLike | None = None, enable_drefs: _IntLike | None = None, use_absolute_path: _IntLike | None = None) -> Any: ...
             @_Wrapper.Function
