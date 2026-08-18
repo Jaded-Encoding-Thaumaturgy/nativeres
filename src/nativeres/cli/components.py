@@ -139,6 +139,11 @@ LinearOpt = Annotated[
     ),
 ]
 
+SampleGridModelOpt = Annotated[
+    Literal["edges", "centers", 0, 1],
+    Parameter(help="Sampling grid alignment model.", group=common_group),
+]
+
 
 class CleanHelpFormatter(DefaultFormatter):
     def __call__(self, console: Console, options: ConsoleOptions, panel: HelpPanel) -> None:

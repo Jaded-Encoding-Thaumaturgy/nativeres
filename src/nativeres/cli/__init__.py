@@ -12,7 +12,7 @@ from rich.pretty import pretty_repr
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.style import Style
 from rich.table import Table
-from vskernels import Bilinear
+from vskernels import Bilinear, SampleGridModel
 from vsmasktools import EdgeDetect
 from vssource import BestSource
 from vstools import vs
@@ -31,6 +31,7 @@ from .components import (
     KernelsOpt,
     LinearOpt,
     MetricModeOpt,
+    SampleGridModelOpt,
     helpers_group,
 )
 from .helpers import (
@@ -103,6 +104,7 @@ def getnative(
     dim_mode: DimModeOpt = "height",
     kernel: KernelOpt = Bilinear(),  # noqa: B008
     linear: LinearOpt = False,
+    sample_grid_model: SampleGridModelOpt = "edges",
     frame: FrameOpt = 0,
     step: Annotated[
         float,
@@ -179,6 +181,12 @@ def getnative(
         case _:
             assert_never(dim_mode)
 
+    sgm = (
+        SampleGridModel[f"MATCH_{sample_grid_model.upper()}"]
+        if isinstance(sample_grid_model, str)
+        else sample_grid_model
+    )
+
     # Pretty progress
     gtask_id = progress.add_task("Gathering data...", total=None)
 
@@ -192,9 +200,11 @@ def getnative(
             kernel,
             crop,
             metric_mode=metric_mode,
+            sample_grid_model=sgm,
             progress_cb=lambda curr, total: progress.update(
                 gtask_id, completed=curr, total=total, refresh=True, visible=True
             ),
+            func=getnative,
         )
         progress.update(gtask_id, total=100, completed=100, refresh=True)
 
@@ -237,6 +247,7 @@ def getscaler(
     base_dim: Annotated[int | None, Parameter(alias="-b", group=exclusive_group)] = None,
     kernels: KernelsOpt = [],  # noqa: B006
     linear: LinearOpt = False,
+    sample_grid_model: SampleGridModelOpt = "edges",
     frame: FrameOpt = 0,
     crop: CropOpt = None,
     metric_mode: MetricModeOpt = "MAE",
@@ -274,6 +285,12 @@ def getscaler(
         f"base_{dim_mode}": base_dim,
     }
 
+    sgm = (
+        SampleGridModel[f"MATCH_{sample_grid_model.upper()}"]
+        if isinstance(sample_grid_model, str)
+        else sample_grid_model
+    )
+
     progress = Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
@@ -290,6 +307,8 @@ def getscaler(
             crop=crop,
             metric_mode=metric_mode,
             mask=mask,
+            sample_grid_model=sgm,
+            func=getscaler,
             **scaler_args,
         )
     progress.update(task, completed=100, total=100, visible=False, refresh=True)
