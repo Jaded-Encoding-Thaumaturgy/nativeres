@@ -12,22 +12,14 @@ from rich.pretty import pretty_repr
 from rich.progress import BarColumn, Progress, TextColumn
 from rich.style import Style
 from rich.table import Table
-from vskernels import Bilinear, SampleGridModel
+from vskernels import Bilinear
 from vsmasktools import EdgeDetect
 from vstools import vs
 
 from .. import funcs
 from ..constants import HIGH_RATE, LOW_RATE
 from ..kernels import default_kernels
-from .components import (
-    CleanHelpFormatter,
-    CommonOpts,
-    InputFileArg,
-    KernelOpt,
-    KernelsOpt,
-    RescaleOpts,
-    helpers_group,
-)
+from .components import CleanHelpFormatter, CommonOpts, InputFileArg, KernelOpt, KernelsOpt, RescaleOpts, helpers_group
 from .helpers import (
     get_progress,
     get_videonode_from_input,
@@ -40,24 +32,22 @@ from .logging import console, setup_logging
 
 logger = getLogger(__name__)
 
+exclusive_group = Group("Command Options", sort_key=5)
 app = App(
     name="nativeres",
     console=console,
     help_formatter=CleanHelpFormatter.with_newline_metadata(),  # type: ignore[no-untyped-call]
     default_parameter=Parameter(negative=()),
+    group_parameters=exclusive_group,
 )
-exclusive_group = Group("Command Options", sort_key=5)
 
 
 @app.meta.default
 def main_meta(
     *tokens: Annotated[str, Parameter(show=False, allow_leading_hyphen=True)],
     show_kernels: Annotated[bool, Parameter(group=helpers_group, show_default=False)] = False,
-    show_vskernels_flag: Annotated[
-        bool,
-        Parameter(name="show-vskernels", group=helpers_group, show_default=False),
-    ] = False,
-    show_masks_flag: Annotated[bool, Parameter(name="show-masks", group=helpers_group, show_default=False)] = False,
+    show_vskernels_: Annotated[bool, Parameter(group=helpers_group, show_default=False)] = False,
+    show_masks_: Annotated[bool, Parameter(group=helpers_group, show_default=False)] = False,
     debug: Annotated[bool, Parameter(show=False)] = False,
     global_debug: Annotated[bool, Parameter(show=False)] = False,
 ) -> None:
@@ -66,8 +56,8 @@ def main_meta(
 
     Args:
         show_kernels: Show the default checked kernels for getscaler and exit.
-        show_vskernels_flag: Show the builtin supported kernels from vskernels and exit.
-        show_masks_flag: Show the supported edge masks from vsmasktools and exit.
+        show_vskernels_: Show the builtin supported kernels from vskernels and exit.
+        show_masks_: Show the supported edge masks from vsmasktools and exit.
         debug: Enable debug output.
         global_debug: Enable global debug output.
     """
@@ -75,9 +65,9 @@ def main_meta(
 
     if show_kernels:
         show_default_kernels()
-    if show_vskernels_flag:
+    if show_vskernels_:
         show_vskernels()
-    if show_masks_flag:
+    if show_masks_:
         show_masks()
     if debug:
         getLogger((__package__ or "").split(".")[0]).setLevel(DEBUG)
@@ -92,30 +82,24 @@ def getnative(
     input_file: InputFileArg,
     /,
     *,
-    opts: RescaleOpts = RescaleOpts(),  # noqa: B008
-    range_dim: Annotated[
-        tuple[int, int] | None,
-        Parameter(alias="-rd", help="The inclusive range of resolutions to test (START END).", group=exclusive_group),
-    ] = None,
+    range_dim: Annotated[tuple[int, int] | None, Parameter(alias="-rd")] = None,
     kernel: KernelOpt = Bilinear(),  # noqa: B008
-    step: Annotated[
-        float,
-        Parameter(
-            short_alias=True,
-            help="The increment step between resolutions in the tested range.",
-            group=exclusive_group,
-        ),
-    ] = 1,
-    base_parity: Annotated[
-        Literal["odd", "even"],
-        Parameter(alias="-bp", help="Base dimension parity for fractional descales.", group=exclusive_group),
-    ] = "even",
+    step: Annotated[float, Parameter(short_alias=True)] = 1,
+    base_parity: Annotated[Literal["odd", "even"], Parameter(alias="-bp")] = "even",
+    opts: RescaleOpts = RescaleOpts(),  # noqa: B008
 ) -> None:
     """
     Determine the native resolution of upscaled material
 
     Analyzes a range of dimensions to find which one produces the lowest error when inverse scaled.
     Primary use case is finding the native resolution of upscaled anime.
+
+    Args:
+        range_dim: The inclusive range of resolutions to test (START END).
+        kernel: The kernel to use for inverse scaling. Can be a kernel name or a class call with parameters.
+        step: The increment step between resolutions in the tested range
+        base_parity: Base dimension parity for fractional descales.
+
     """
     progress = get_progress(console, transient=True)
 
@@ -170,12 +154,6 @@ def getnative(
         case _:
             assert_never(opts.dim_mode)
 
-    sgm = (
-        SampleGridModel[f"MATCH_{opts.sample_grid_model.upper()}"]
-        if isinstance(opts.sample_grid_model, str)
-        else opts.sample_grid_model
-    )
-
     # Pretty progress
     gtask_id = progress.add_task("Gathering data...", total=None)
 
@@ -189,7 +167,7 @@ def getnative(
             kernel,
             opts.crop,
             metric_mode=opts.metric_mode,
-            sample_grid_model=sgm,
+            sample_grid_model=opts.resolved_sample_grid_model,
             progress_cb=lambda curr, total: progress.update(
                 gtask_id, completed=curr, total=total, refresh=True, visible=True
             ),
@@ -233,17 +211,13 @@ def getscaler(
     dim: Annotated[float, Parameter(name="NUMBER", converter=lambda type_, tokens: resolve_dimension(tokens[0].value))],
     /,
     *,
-    opts: RescaleOpts = RescaleOpts(),  # noqa: B008
-    base_dim: Annotated[int | None, Parameter(alias="-b", group=exclusive_group)] = None,
-    kernels: KernelsOpt = [],  # noqa: B006
+    base_dim: Annotated[int | None, Parameter(alias="-b")] = None,
+    kernels: KernelsOpt = KernelsOpt(),  # noqa: B008
     mask: Annotated[
         type[EdgeDetect] | None,
-        Parameter(
-            alias="-m",
-            converter=lambda type_, tokens: EdgeDetect.from_param(tokens[0].value),
-            group=exclusive_group,
-        ),
+        Parameter(alias="-m", converter=lambda type_, tokens: EdgeDetect.from_param(tokens[0].value)),
     ] = None,
+    opts: RescaleOpts = RescaleOpts(),  # noqa: B008
 ) -> None:
     """
     Identify the best inverse scaler for a given resolution.
@@ -254,6 +228,7 @@ def getscaler(
     Args:
         dim: The suspected native resolution to verify.
         base_dim: Base integer dimension if checking for fractional resolution.
+        kernels: The kernel(s) to use for inverse scaling. Can be a kernel name or a class call with parameters.
         mask: Edge-detection mask to reduce noise influence on the metric.
     """
     clip = get_videonode_from_input(input_file, opts.indexer)
@@ -268,12 +243,6 @@ def getscaler(
         opts.dim_mode: dim,
         f"base_{opts.dim_mode}": base_dim,
     }
-
-    sgm = (
-        SampleGridModel[f"MATCH_{opts.sample_grid_model.upper()}"]
-        if isinstance(opts.sample_grid_model, str)
-        else opts.sample_grid_model
-    )
 
     progress = Progress(
         TextColumn("[progress.description]{task.description}"),
@@ -291,7 +260,7 @@ def getscaler(
             crop=opts.crop,
             metric_mode=opts.metric_mode,
             mask=mask,
-            sample_grid_model=sgm,
+            sample_grid_model=opts.resolved_sample_grid_model,
             func=getscaler,
             **scaler_args,
         )
@@ -340,9 +309,9 @@ def getfreq(
     input_file: InputFileArg,
     /,
     *,
+    cull_rate: Annotated[float, Parameter(alias="-cr")] = 3.0,
+    radius: Annotated[int, Parameter(short_alias=True)] = 50,
     opts: CommonOpts = CommonOpts(),  # noqa: B008
-    cull_rate: Annotated[float, Parameter(alias="-cr", group=exclusive_group)] = 3.0,
-    radius: Annotated[int, Parameter(short_alias=True, group=exclusive_group)] = 50,
 ) -> None:
     """
     Visualize the frequency distribution of a frame.
