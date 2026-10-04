@@ -56,7 +56,7 @@ plugin = ["vsview-nativeres"]
 [dependency-groups]
 dev = [
     "lazydocs>=0.4.8",
-    "mypy>=2.3.0, <2.4.0",
+    "mypy>=2.4.0, <2.5.0",
     "pydocstyle>=6.3.0",
     "ruff>=0.16.0, <0.17.0",
     "scipy-stubs>=1.16.0.0",
