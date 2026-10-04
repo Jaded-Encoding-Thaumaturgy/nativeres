@@ -1,12 +1,10 @@
 from dataclasses import dataclass
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Literal, Self
 
 from cyclopts import Group, Parameter, Token
-from cyclopts.help import DefaultFormatter, HelpPanel
 from jetpytools import SPath
-from rich.console import Console, ConsoleOptions
 from vskernels import ComplexKernel, SampleGridModel
-from vssource import BestSource
+from vssource import BestSource, Indexer
 
 from ..funcs import MetricMode, resolve_kernel
 from .helpers import get_all_idx, resolve_dimension_mode, resolve_idx
@@ -28,9 +26,28 @@ InputFileArg = Annotated[
 ]
 
 
-@Parameter(alias="-c", converter="parse")
+KernelOpt = Annotated[
+    ComplexKernel,
+    Parameter(
+        short_alias=True,
+        converter=lambda type_, tokens: resolve_kernel(tokens[0].value if tokens else ""),
+        metavar="",
+    ),
+]
+
+
+class KernelsOpt(list[ComplexKernel]):
+    @classmethod
+    def parse(cls, tokens: list[Token]) -> Self:
+        res = cls()
+
+        for token in tokens:
+            for s in token.value.split(","):
+                res.append(resolve_kernel(s.strip(), ValueError))
+        return res
+
+
 class CropOpt(tuple[int, int, int, int]):
-    @Parameter(n_tokens=4, accepts_keys=False)
     @classmethod
     def parse(cls, tokens: list[Token]) -> Self:
         raw_vals = [t.value for t in tokens]
@@ -45,27 +62,6 @@ class CropOpt(tuple[int, int, int, int]):
         raise ValueError(f"Invalid crop parameters: {raw_vals}. Expected 4 integers (LEFT RIGHT TOP BOTTOM).")
 
 
-KernelOpt = Annotated[
-    ComplexKernel,
-    Parameter(short_alias=True, converter=lambda type_, tokens: resolve_kernel(tokens[0].value if tokens else "")),
-]
-
-
-@Parameter(name="kernel", alias="-k", show_default=False, converter="parse")
-class KernelsOpt(list[ComplexKernel]):
-    @classmethod
-    def parse(cls, tokens: list[Token]) -> Self:
-        res = cls()
-
-        for token in tokens:
-            for s in token.value.split(","):
-                res.append(resolve_kernel(s.strip(), ValueError))
-        return res
-
-
-IdxChoice: Any = Literal[*get_all_idx()]
-
-
 @Parameter(name="*", group=common_group)
 @dataclass(kw_only=True, frozen=True)
 class CommonOpts:
@@ -76,14 +72,15 @@ class CommonOpts:
     """Whether to process rescale in linear light."""
 
     indexer: Annotated[
-        IdxChoice,  # pyright: ignore[reportInvalidTypeForm]
+        Indexer,
         Parameter(
             alias="-idx",
+            accepts_keys=False,
             converter=lambda type_, tokens: resolve_idx(tokens[0].value if tokens else "bs"),
-            show_choices=True,
-            show_default=lambda s: s.__name__,
+            choices=get_all_idx(),
+            show_default=lambda s: s.__class__.__name__,
         ),
-    ] = BestSource
+    ] = BestSource()  # noqa: RUF009
     """The VapourSynth indexer used to load files."""
 
 
@@ -99,8 +96,18 @@ class RescaleOpts(CommonOpts):
     sample_grid_model: Literal["edges", "centers", 0, 1] = "edges"
     """Sampling grid alignment model."""
 
-    crop: CropOpt | None = None
-    """Crop the input frame before analysis to remove black bars (LEFT RIGHT TOP BOTTOM)."""
+    crop: Annotated[
+        CropOpt | None,
+        Parameter(
+            name="crop",
+            alias="-c",
+            converter=CropOpt.parse,
+            n_tokens=4,
+            accepts_keys=False,
+            metavar="LEFT RIGHT TOP BOTTOM",
+        ),
+    ] = None
+    """Crop the input frame before analysis to remove black bars."""
 
     metric_mode: Annotated[
         MetricMode,
@@ -115,14 +122,3 @@ class RescaleOpts(CommonOpts):
             if isinstance(self.sample_grid_model, str)
             else SampleGridModel(self.sample_grid_model)
         )
-
-
-class CleanHelpFormatter(DefaultFormatter):
-    def __call__(self, console: Console, options: ConsoleOptions, panel: HelpPanel) -> None:
-        panel.entries = [
-            entry.copy(positive_names=entry.positive_names[1:])  # type: ignore[no-untyped-call]
-            if len(entry.positive_names) > 1 and not entry.positive_names[0].startswith("-")
-            else entry
-            for entry in panel.entries
-        ]
-        super().__call__(console, options, panel)

@@ -19,7 +19,7 @@ from vstools import vs
 from .. import funcs
 from ..constants import HIGH_RATE, LOW_RATE
 from ..kernels import default_kernels
-from .components import CleanHelpFormatter, CommonOpts, InputFileArg, KernelOpt, KernelsOpt, RescaleOpts, helpers_group
+from .components import CommonOpts, InputFileArg, KernelOpt, KernelsOpt, RescaleOpts, helpers_group
 from .helpers import (
     get_progress,
     get_videonode_from_input,
@@ -36,7 +36,7 @@ exclusive_group = Group("Command Options", sort_key=5)
 app = App(
     name="nativeres",
     console=console,
-    help_formatter=CleanHelpFormatter.with_newline_metadata(),  # type: ignore[no-untyped-call]
+    # help_formatter=CleanHelpFormatter.with_newline_metadata(),  # type: ignore[no-untyped-call]
     default_parameter=Parameter(negative=()),
     group_parameters=exclusive_group,
 )
@@ -82,9 +82,9 @@ def getnative(
     input_file: InputFileArg,
     /,
     *,
-    range_dim: Annotated[tuple[int, int] | None, Parameter(alias="-rd")] = None,
+    range_dim: Annotated[tuple[int, int] | None, Parameter(alias="-rd", metavar="START END")] = None,
     kernel: KernelOpt = Bilinear(),  # noqa: B008
-    step: Annotated[float, Parameter(short_alias=True)] = 1,
+    step: Annotated[float, Parameter(short_alias=True, metavar="NUMBER")] = 1,
     base_parity: Annotated[Literal["odd", "even"], Parameter(alias="-bp")] = "even",
     opts: RescaleOpts = RescaleOpts(),  # noqa: B008
 ) -> None:
@@ -212,10 +212,13 @@ def getscaler(
     /,
     *,
     base_dim: Annotated[int | None, Parameter(alias="-b")] = None,
-    kernels: KernelsOpt = KernelsOpt(),  # noqa: B008
+    kernels: Annotated[
+        KernelsOpt,
+        Parameter(name="kernel", alias="-k", show_default=False, metavar="", converter=KernelsOpt.parse),
+    ] = KernelsOpt(),  # noqa: B008
     mask: Annotated[
         type[EdgeDetect] | None,
-        Parameter(alias="-m", converter=lambda type_, tokens: EdgeDetect.from_param(tokens[0].value)),
+        Parameter(alias="-m", converter=lambda type_, tokens: EdgeDetect.from_param(tokens[0].value), metavar=""),
     ] = None,
     opts: RescaleOpts = RescaleOpts(),  # noqa: B008
 ) -> None:
