@@ -33,13 +33,7 @@ from .logging import console, setup_logging
 logger = getLogger(__name__)
 
 exclusive_group = Group("Command Options", sort_key=5)
-app = App(
-    name="nativeres",
-    console=console,
-    # help_formatter=CleanHelpFormatter.with_newline_metadata(),  # type: ignore[no-untyped-call]
-    default_parameter=Parameter(negative=()),
-    group_parameters=exclusive_group,
-)
+app = App(name="nativeres", console=console, default_parameter=Parameter(negative=()), group_parameters=exclusive_group)
 
 
 @app.meta.default
