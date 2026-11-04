@@ -566,23 +566,15 @@ class FrequencyPlotWidget(BasePlotWidget):
         self.v_pen = self.series_v.pen()
 
         # Spikes Horizontal Series
-        self.series_spikes_h = QScatterSeries(
-            self,
-            color=self.series_h.pen().color(),
-            borderColor=self.TRANSPARENT_COLOR,
-            markerSize=10,
-        )
+        self.series_spikes_h = QScatterSeries(self, borderColor=self.TRANSPARENT_COLOR, markerSize=10)
+        self.series_spikes_h.setColor(self.series_h.pen().color())
         self.series_spikes_h.setName("Spikes Width")
         chart.addSeries(self.series_spikes_h)
         self.set_spikes_h()
 
         # Spikes Vertical Series
-        self.series_spikes_v = QScatterSeries(
-            self,
-            color=self.series_v.pen().color(),
-            borderColor=self.TRANSPARENT_COLOR,
-            markerSize=10,
-        )
+        self.series_spikes_v = QScatterSeries(self, borderColor=self.TRANSPARENT_COLOR, markerSize=10)
+        self.series_spikes_v.setColor(self.series_v.pen().color())
         self.series_spikes_v.setName("Spikes Height")
         chart.addSeries(self.series_spikes_v)
         self.set_spikes_v()
