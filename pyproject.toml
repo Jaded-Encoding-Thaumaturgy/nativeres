@@ -58,7 +58,7 @@ dev = [
     "lazydocs>=0.4.8",
     "mypy>=2.4.0, <2.5.0",
     "pydocstyle>=6.3.0",
-    "ruff>=0.16.0, <0.17.0",
+    "ruff>=0.17.0, <0.18.0",
     "scipy-stubs>=1.16.0.0",
     "vsstubs>=2.0.0",
     # Specify them to resolve transitive dependency resolution and uv index
