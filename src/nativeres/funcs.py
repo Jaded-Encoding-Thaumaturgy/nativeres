@@ -99,13 +99,12 @@ def getnative(
 
     dimensions = list(dimensions)
 
-    rescale_list = list[Rescale]()
     ress = list[ResolutionFrac]()
 
     if progress_cb:
         progress_cb(0, len(dimensions))
 
-    for i, (w, h) in enumerate(dimensions):
+    for w, h in dimensions:
         if isinstance(w, tuple):
             w, bw = w
         else:
@@ -117,7 +116,10 @@ def getnative(
 
         ress.append(ResolutionFrac(w, h, bw, bh))
 
-        r = Rescale(
+    def eval_func(n: int) -> vs.VideoNode:
+        nonlocal clip_frame
+        w, h, bw, bh = ress[n]
+        res = Rescale(
             clip_frame,
             h,
             kernel,
@@ -129,12 +131,6 @@ def getnative(
             shift=shift,
             **kwargs,
         )
-        rescale_list.append(r)
-        if progress_cb:
-            progress_cb(i, len(dimensions))
-
-    def eval_func(n: int) -> vs.VideoNode:
-        res = rescale_list[n]
         try:
             return res.rescale
         finally:
@@ -152,8 +148,6 @@ def getnative(
     try:
         return [GetNativeResult(d, e) for d, e in zip(ress, errors)]
     finally:
-        for r in rescale_list:
-            r.__vs_del__(-1)
         del clip_frame, rescaled
         gc.collect()
 
