@@ -60,6 +60,7 @@ def getnative(
     crop: tuple[LeftCrop, RightCrop, TopCrop, BottomCrop] | None = None,
     shift: tuple[TopShift, LeftShift] = (0, 0),
     metric_mode: MetricMode = "MAE",
+    mask: MaskLike | None = None,
     borders_aware: bool | int | tuple[LeftCrop, RightCrop, TopCrop, BottomCrop] = 8,
     progress_cb: Callable[[int, int], None] | None = None,
     *,
@@ -81,6 +82,7 @@ def getnative(
         crop: Optional crop to apply before descaling. Aspect ratio is preserved.
         shift: Optional pixel shift applied during descaling: `(top_shift, left_shift)`.
         metric_mode: Error metric to use: `"MSE"`, `"MAE"`, or `"RMSE"`.
+        mask: Optional edge-detection mask to reduce noise influence on the metric.
         borders_aware: Amount (or crop tuple) to ignore at image borders to avoid edge noise when computing the metric.
         progress_cb: Optional progress callback called as `progress_cb(current, total)`.
         func: Function returned for custom error handling.
@@ -137,6 +139,12 @@ def getnative(
             cachedproperty.clear_cache(res)
 
     rescaled = clip_frame.std.BlankClip(length=len(dimensions)).std.FrameEval(eval_func)
+
+    if mask:
+        norm_mask = normalize_mask(mask, clip_frame, clip_frame, func=func)
+        num_dims = len(dimensions)
+        rescaled = core.std.MaskedMerge(clip_frame * num_dims, rescaled, norm_mask * num_dims)
+
     rescaled = (
         norm_expr([rescaled, clip_frame], getattr(ExprOp, metric_mode.lower())(clip_frame), func=func)
         .std.CropRel(*crops)

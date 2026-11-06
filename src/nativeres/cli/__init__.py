@@ -80,6 +80,10 @@ def getnative(
     kernel: KernelOpt = Bilinear(),  # noqa: B008
     step: Annotated[float, Parameter(short_alias=True, metavar="NUMBER")] = 1,
     base_parity: Annotated[Literal["odd", "even"], Parameter(alias="-bp")] = "even",
+    mask: Annotated[
+        type[EdgeDetect] | None,
+        Parameter(alias="-m", converter=lambda type_, tokens: EdgeDetect.from_param(tokens[0].value), metavar=""),
+    ] = None,
     opts: RescaleOpts = RescaleOpts(),  # noqa: B008
 ) -> None:
     """
@@ -93,6 +97,7 @@ def getnative(
         kernel: The kernel to use for inverse scaling. Can be a kernel name or a class call with parameters.
         step: The increment step between resolutions in the tested range
         base_parity: Base dimension parity for fractional descales.
+        mask: Edge-detection mask to reduce noise influence on the metric.
 
     """
     progress = get_progress(console, transient=True)
@@ -161,6 +166,7 @@ def getnative(
             kernel,
             opts.crop,
             metric_mode=opts.metric_mode,
+            mask=mask,
             sample_grid_model=opts.resolved_sample_grid_model,
             progress_cb=lambda curr, total: progress.update(
                 gtask_id, completed=curr, total=total, refresh=True, visible=True
@@ -178,8 +184,9 @@ def getnative(
     win.setWindowIcon(win.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
     win.resize(1000, 600)
 
+    mask_title_suffix = f" ({mask.__name__})" if mask else ""
     plot = RescalePlotWidget(
-        f"Error plot - {kernel.pretty_string} on {opts.dim_mode}",
+        f"Error plot - {kernel.pretty_string} on {opts.dim_mode}{mask_title_suffix}",
         [getattr(d, opts.dim_mode) for d in dims],
         errors,
         opts.dim_mode.title(),
