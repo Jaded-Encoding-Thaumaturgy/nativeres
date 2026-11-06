@@ -7,7 +7,7 @@ name = "nativeres"
 description = "Descale analysis tools for VapourSynth"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 authors = [{ name = "Vardë", email = "ichunjo.le.terrible@gmail.com" }]
 maintainers = [{ name = "Vardë", email = "ichunjo.le.terrible@gmail.com" }]
 keywords = [
@@ -32,7 +32,7 @@ classifiers = [
 dependencies = [
     "vsjetengine>=1.2.0",
     "vapoursynth>=75",
-    "vsjetpack[source,kernels]>=2.2.2",
+    "vsjetpack[source,kernels]>=3.0.0",
     "cyclopts>=5.0.0",
     "rich>=15.0.0",
     "pyside6>=6.11.0",
