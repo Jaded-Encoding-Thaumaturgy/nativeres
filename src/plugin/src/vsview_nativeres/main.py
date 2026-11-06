@@ -19,9 +19,9 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
     QGraphicsView,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
-    QLabel,
     QListWidgetItem,
     QMessageBox,
     QPushButton,
@@ -170,22 +170,11 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         self.step_spin.setToolTip("Distance between tested dimensions.\nFractional values are also supported.")
         step_layout = self.make_vgroup("Step", self.step_spin, parent=self.controls_section, stretch=False)
 
-        self.range_step_layout = QVBoxLayout()
-        self.range_step_layout.addLayout(range_layout)
-        self.range_step_layout.addLayout(step_layout)
-        self.range_step_layout.addStretch()
-
-        controls.addLayout(self.range_step_layout, 1)
-
-        self.kernels_cb = QComboBox(self.controls_section)
-        self.kernels_cb.setToolTip("Descale kernel used for each candidate resolution test.")
-        kernels_layout = self.make_vgroup("Kernel", self.kernels_cb, parent=self.controls_section, stretch=False)
         self.sample_grid_model_cb = QComboBox(self.controls_section)
         self.sample_grid_model_cb.addItems(["Edges", "Centers"])
         self.sample_grid_model_cb.setToolTip("Sampling grid alignment model.")
-        sample_grid_model_layout = QHBoxLayout()
-        sample_grid_model_layout.addWidget(QLabel("Sample Grid Model", self.controls_section))
-        sample_grid_model_layout.addWidget(self.sample_grid_model_cb)
+        sgm_layout = self.make_vgroup("Sample Grid Model", self.sample_grid_model_cb, parent=self.controls_section)
+
         self.metrics_cb = QComboBox(self.controls_section)
         self.metrics_cb.addItems(MetricMode.__value__.__args__)
         self.metrics_cb.setToolTip(
@@ -193,19 +182,35 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             "MAE is generally the most stable, while MSE tends to produce steeper slopes."
         )
         metrics_layout = self.make_vgroup("Metric", self.metrics_cb, parent=self.controls_section, stretch=False)
+
+        range_step_grid = QGridLayout()
+        range_step_grid.setContentsMargins(0, 0, 0, 0)
+        range_step_grid.setSpacing(8)
+        range_step_grid.addLayout(range_layout, 0, 0)
+        range_step_grid.addLayout(sgm_layout, 0, 1)
+        range_step_grid.addLayout(step_layout, 1, 0)
+        range_step_grid.addLayout(metrics_layout, 1, 1)
+        range_step_grid.setColumnStretch(0, 1)
+        range_step_grid.setColumnStretch(1, 1)
+
+        self.range_step_layout = QVBoxLayout()
+        self.range_step_layout.addLayout(range_step_grid)
+        self.range_step_layout.addStretch()
+
+        controls.addLayout(self.range_step_layout, 1)
+
+        self.kernels_cb = QComboBox(self.controls_section)
+        self.kernels_cb.setToolTip("Descale kernel used for each candidate resolution test.")
+        kernels_layout = self.make_vgroup("Kernel", self.kernels_cb, parent=self.controls_section, stretch=False)
+
         self.mask_cb = QComboBox(self.controls_section)
         self.mask_cb.setToolTip("Edge-detection mask to reduce noise influence on the metric.")
         mask_layout = self.make_vgroup("Mask", self.mask_cb, parent=self.controls_section, stretch=False)
 
-        metric_mask_layout = QHBoxLayout()
-        metric_mask_layout.addLayout(metrics_layout)
-        metric_mask_layout.addLayout(mask_layout)
-
         self.opts_layout = QVBoxLayout()
         self.opts_layout.addLayout(kernels_layout)
-        self.opts_layout.addLayout(sample_grid_model_layout)
-        self.opts_layout.addLayout(metric_mask_layout)
         self.opts_layout.addStretch()
+        self.opts_layout.addLayout(mask_layout)
 
         controls.addLayout(self.opts_layout, 1)
 
@@ -721,13 +726,12 @@ class GetScalerTab(TabContainer):
         self.sample_grid_model_cb = QComboBox(self.controls_section)
         self.sample_grid_model_cb.addItems(["Edges", "Centers"])
         self.sample_grid_model_cb.setToolTip("Sampling grid alignment model.")
-        sample_grid_model_layout = QHBoxLayout()
-        sample_grid_model_layout.addWidget(QLabel("Sample Grid Model", self.controls_section))
-        sample_grid_model_layout.addWidget(self.sample_grid_model_cb)
+        sgm_layout = self.make_vgroup("Sample Grid Model", self.sample_grid_model_cb, parent=self.controls_section)
 
-        opts_layout = QVBoxLayout()
+        opts_layout = QHBoxLayout()
         opts_layout.addLayout(mask_layout)
-        opts_layout.addLayout(sample_grid_model_layout)
+        opts_layout.addLayout(sgm_layout)
+
         controls.addLayout(opts_layout, 1)
 
         self.calculate_btn = QPushButton("Calculate", self)
