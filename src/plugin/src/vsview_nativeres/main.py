@@ -519,7 +519,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         self.progress_bar.update_progress(fmt="Gathering data %v / %m", value=0)
         self.progress_container.show()
 
-        @run_in_background(name="GetNativeResults")
+        @run_in_background(name="GetNativeResults", owner=self)
         def get_results() -> list[GetNativeResult]:
             with self.api.vs_context():
                 return getnative(
@@ -857,7 +857,7 @@ class GetScalerTab(TabContainer):
             case _:
                 raise ValueError("Invalid dimension")
 
-        @run_in_background(name="GetScalerResults")
+        @run_in_background(name="GetScalerResults", owner=self)
         def get_results() -> list[GetScalerResult]:
             with self.api.vs_context():
                 return getscaler(
@@ -999,7 +999,7 @@ class GetFreqTab(TabContainer):
         self._last_request_id += 1
         request_id = self._last_request_id
 
-        @run_in_background(name="GetDCTDistribution")
+        @run_in_background(name="GetDCTDistribution", owner=self)
         def get_results() -> tuple[NpFloatArray1D, NpFloatArray1D]:
             with self.api.vs_context():
                 return get_dct_distribution(clip, frame, cull_rate)

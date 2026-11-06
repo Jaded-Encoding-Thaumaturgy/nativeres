@@ -1404,5 +1404,5 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "nativeres", editable = "." },
-    { name = "vsview", specifier = ">=0.8.0" },
+    { name = "vsview", specifier = ">=0.14.0" },
 ]
