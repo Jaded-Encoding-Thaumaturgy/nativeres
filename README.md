@@ -58,6 +58,12 @@ Usage can be found in the **[plugin README](https://github.com/Jaded-Encoding-Th
   nativeres getnative file.m2ts --frame 15000 --dim-mode height --kernel bilinear
   ```
 
+  An optional edge mask (e.g. `--mask sobel`) can be passed to reduce compression and grain noise influence:
+
+  ```bash
+  nativeres getnative file.m2ts --frame 15000 --dim-mode height --kernel bilinear --mask sobel
+  ```
+
   ![`nativeres getnative`](https://raw.githubusercontent.com/Jaded-Encoding-Thaumaturgy/nativeres/master/assets/getnative_plot.svg)
 
   Right-click the plot to open the context menu, where you can reset zoom and copy or export the plot as `PNG`, `SVG`, `JSON`, or `CSV`.
@@ -134,6 +140,7 @@ getnative(
     crop: tuple[LeftCrop, RightCrop, TopCrop, BottomCrop] | None = None,
     shift: tuple[TopShift, LeftShift] = (0, 0),
     metric_mode: MetricMode = 'MAE',
+    mask: MaskLike | None = None,
     borders_aware: bool | int | tuple[LeftCrop, RightCrop, TopCrop, BottomCrop] = 8,
     progress_cb: Callable[[int, int], None] | None = None,
     func: FuncExcept | None = None,
@@ -154,6 +161,7 @@ This checks a list of candidate resolutions by descaling the selected frame usin
 - <b>`crop`</b>: Optional crop to apply before descaling. Aspect ratio is preserved.
 - <b>`shift`</b>: Optional pixel shift applied during descaling: `(top_shift, left_shift)`.
 - <b>`metric_mode`</b>: Error metric to use: `"MSE"`, `"MAE"`, or `"RMSE"`.
+- <b>`mask`</b>: Optional edge-detection mask to reduce noise influence on the metric.
 - <b>`borders_aware`</b>: Amount (or crop tuple) to ignore at image borders to avoid edge noise when computing the metric.
 - <b>`progress_cb`</b>: Optional progress callback called as `progress_cb(current, total)`.
 - <b>`func`</b>: Function returned for custom error handling.
