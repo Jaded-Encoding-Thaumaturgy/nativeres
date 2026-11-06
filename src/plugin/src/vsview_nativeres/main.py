@@ -1110,7 +1110,7 @@ class NativeResPlugin(WidgetPluginBase[GlobalSettings, LocalSettings]):
     @run_in_background(name="DumpPlotResults")
     def dump_plot_results(self, plot: CustomRescalePlotWidget) -> None:
         if path := self.api.get_local_storage(self):
-            with (path / plot.chart().title()).open("w", encoding="utf-8", newline="") as f:
+            with (path / plot.chart().title()).with_suffix(".csv").open("w", encoding="utf-8", newline="") as f:
                 csv.writer(f).writerows(plot.serialize_csv())
             logger.info("Dumped plot results to %s", path)
         else:
