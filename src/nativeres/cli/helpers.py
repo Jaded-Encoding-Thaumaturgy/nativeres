@@ -24,22 +24,22 @@ def resolve_dimension(value: str) -> float:
 
 
 def get_all_idx() -> list[str]:
-    all_indexers = list[str]()
+    all_indexers = set[str]()
 
     with Policy() as policy, policy.new_environment() as env, env.use():
         for s in get_subclasses(Indexer):
-            if isabstract(s) or not hasattr(s, "_source_func"):
+            if isabstract(s) or getattr(s, "_source_func", None) is None:
                 continue
-            all_indexers.append(s.__name__.lower())
+            all_indexers.add(s.__name__.lower())
 
             source_func = getattr(s, "_source_func", None)
             plugin = getattr(source_func, "plugin", None)
             plugin_ns = getattr(plugin, "namespace", None)
 
             if plugin_ns:
-                all_indexers.append(plugin_ns)
+                all_indexers.add(plugin_ns)
 
-    return all_indexers
+    return sorted(all_indexers)
 
 
 def resolve_idx(idx: str) -> Indexer:
