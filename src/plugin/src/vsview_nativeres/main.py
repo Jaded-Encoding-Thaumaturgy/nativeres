@@ -193,11 +193,18 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             "MAE is generally the most stable, while MSE tends to produce steeper slopes."
         )
         metrics_layout = self.make_vgroup("Metric", self.metrics_cb, parent=self.controls_section, stretch=False)
+        self.mask_cb = QComboBox(self.controls_section)
+        self.mask_cb.setToolTip("Edge-detection mask to reduce noise influence on the metric.")
+        mask_layout = self.make_vgroup("Mask", self.mask_cb, parent=self.controls_section, stretch=False)
+
+        metric_mask_layout = QHBoxLayout()
+        metric_mask_layout.addLayout(metrics_layout)
+        metric_mask_layout.addLayout(mask_layout)
 
         self.opts_layout = QVBoxLayout()
         self.opts_layout.addLayout(kernels_layout)
         self.opts_layout.addLayout(sample_grid_model_layout)
-        self.opts_layout.addLayout(metrics_layout)
+        self.opts_layout.addLayout(metric_mask_layout)
         self.opts_layout.addStretch()
 
         controls.addLayout(self.opts_layout, 1)
@@ -280,6 +287,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             QSignalBlocker(self.step_spin),
             QSignalBlocker(self.kernels_cb),
             QSignalBlocker(self.metrics_cb),
+            QSignalBlocker(self.mask_cb),
         ):
             self.range_min_spin_h.setValue(int(self.api.current_voutput.vs_output.clip.height * LOW_RATE))
             self.range_max_spin_h.setValue(int(self.api.current_voutput.vs_output.clip.height * HIGH_RATE))
@@ -291,6 +299,11 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             self.kernels_cb.setCurrentText("Bilinear()")
             self.sample_grid_model_cb.setCurrentIndex(0)
             self.metrics_cb.setCurrentText("MAE")
+            self.mask_cb.clear()
+            for s in get_edge_detect_classes():
+                self.mask_cb.addItem(s.__name__, s)
+            self.mask_cb.insertItem(0, "", None)
+            self.mask_cb.setCurrentText("")
 
         self.update_limits()
 
@@ -305,6 +318,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             QSignalBlocker(self.kernels_cb),
             QSignalBlocker(self.sample_grid_model_cb),
             QSignalBlocker(self.metrics_cb),
+            QSignalBlocker(self.mask_cb),
         ):
             if (d := self.settings.local_.getnative.last_dimension) is not None:
                 self.dimension.index = d
@@ -335,6 +349,9 @@ class GetNativeTab(TabContainer, IconReloadMixin):
             if (metric := self.settings.local_.getnative.last_metric) is not None:
                 self.metrics_cb.setCurrentText(metric)
 
+            if (mask := self.settings.local_.getnative.last_mask) is not None:
+                self.mask_cb.setCurrentText(mask)
+
         self.update_limits()
 
     @Slot()
@@ -349,6 +366,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         self.settings.local_.getnative.last_kernel = resolve_kernel(self.kernels_cb.currentText())
         self.settings.local_.getnative.last_sample_grid_model = self.sample_grid_model_cb.currentIndex()
         self.settings.local_.getnative.last_metric = self.metrics_cb.currentText()
+        self.settings.local_.getnative.last_mask = self.mask_cb.currentText()
 
     @Slot()
     def on_global_settings_changed(self) -> None:
@@ -485,7 +503,12 @@ class GetNativeTab(TabContainer, IconReloadMixin):
         kernel = self.kernels_cb.currentData()
         sample_grid_model = self.sample_grid_model_cb.currentIndex()
         metric_mode = cast(MetricMode, self.metrics_cb.currentText())
-        title = f"{self.api.current_voutput.vs_name} - {kernel.pretty_string} on {dim_mode.lower()} - frame {frame}"
+        mask = self.mask_cb.currentData()
+        mask_title_suffix = f" ({mask.__name__})" if mask else ""
+        title = (
+            f"{self.api.current_voutput.vs_name} - {kernel.pretty_string} on "
+            f"{dim_mode.lower()} - frame {frame}{mask_title_suffix}"
+        )
 
         self.canvas.setCurrentWidget(self.progress_container)
         self.progress_bar.update_progress(fmt="Gathering data %v / %m", value=0)
@@ -501,6 +524,7 @@ class GetNativeTab(TabContainer, IconReloadMixin):
                     kernel,
                     sample_grid_model=sample_grid_model,
                     metric_mode=metric_mode,
+                    mask=mask,
                     progress_cb=(
                         lambda current, total: self.progress_bar.update_progress(
                             value=current,

@@ -150,6 +150,7 @@ class GetNativeLocalSettings(BaseModel):
     last_kernel: PydanticKernel | None = None
     last_sample_grid_model: int | None = None
     last_metric: str | None = None
+    last_mask: str | None = None
 
 
 class GetScalerLocalSettings(BaseModel):
