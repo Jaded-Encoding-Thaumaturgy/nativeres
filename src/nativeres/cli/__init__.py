@@ -112,7 +112,7 @@ def getnative(
 
         progress.update(task, visible=False)
 
-    clip = get_videonode_from_input(input_file, opts.indexer)
+    clip = get_videonode_from_input(input_file, opts.indexer, opts.output)
 
     if opts.linear:
         clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
@@ -235,7 +235,7 @@ def getscaler(
         kernels: The kernel(s) to use for inverse scaling. Can be a kernel name or a class call with parameters.
         mask: Edge-detection mask to reduce noise influence on the metric.
     """
-    clip = get_videonode_from_input(input_file, opts.indexer)
+    clip = get_videonode_from_input(input_file, opts.indexer, opts.output)
 
     if opts.linear:
         clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)
@@ -339,7 +339,7 @@ def getfreq(
 
         progress.update(task, visible=False)
 
-    clip = get_videonode_from_input(input_file, opts.indexer)
+    clip = get_videonode_from_input(input_file, opts.indexer, opts.output)
 
     if opts.linear:
         clip = clip.resize.Point(transfer=vs.TRANSFER_LINEAR)

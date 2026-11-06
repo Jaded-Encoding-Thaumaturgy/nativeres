@@ -50,7 +50,7 @@ Usage can be found in the **[plugin README](https://github.com/Jaded-Encoding-Th
 
 ### CLI
 
-`nativeres` accepts regular media files, images, and VapourSynth scripts (`.vpy` / `.py`). For scripts, the first VapourSynth output is used.
+`nativeres` accepts regular media files, images, and VapourSynth scripts (`.vpy` / `.py`). For scripts, the first VapourSynth output is used by default (or a specific one via `--output` / `-o`).
 
 - Displays a plot to determine the native resolution height for the frame 15000 with the Bilinear kernel:
 

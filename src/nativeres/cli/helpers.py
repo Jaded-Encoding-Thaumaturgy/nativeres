@@ -99,7 +99,7 @@ def show_masks() -> NoReturn:
 
 
 # Helpers
-def get_videonode_from_input(path: SPath, indexer: Indexer) -> vs.VideoNode:
+def get_videonode_from_input(path: SPath, indexer: Indexer, output: int | None = None) -> vs.VideoNode:
     if not path.exists():
         raise ValueError(f"{path.to_str()!r} doesn't exist.")
 
@@ -107,7 +107,7 @@ def get_videonode_from_input(path: SPath, indexer: Indexer) -> vs.VideoNode:
         from vsengine import load_script
 
         load_script(path, module="__nativeres__").result()
-        out = next(iter(vs.get_outputs().values()))
+        out = vs.get_output(output) if output is not None else next(iter(vs.get_outputs().values()))
 
         if not isinstance(out, vs.VideoOutputTuple):
             raise CustomValueError("Unknown VapourSynth output", get_videonode_from_input, type(out))

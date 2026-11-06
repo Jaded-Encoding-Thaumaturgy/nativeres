@@ -83,6 +83,9 @@ class CommonOpts:
     ] = BestSource()  # noqa: RUF009
     """The VapourSynth indexer used to load files."""
 
+    output: Annotated[int | None, Parameter(short_alias=True)] = None
+    """The VapourSynth output index to use when loading a script. Defaults to the first output."""
+
 
 @Parameter(name="*", group=common_group)
 @dataclass(kw_only=True, frozen=True)
