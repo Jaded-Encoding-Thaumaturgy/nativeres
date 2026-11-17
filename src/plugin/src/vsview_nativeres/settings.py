@@ -69,7 +69,7 @@ PydanticQColorMetadata = (BeforeValidator(lambda v: QColor(v)), PlainSerializer(
 
 PydanticKernel = Annotated[
     ComplexKernel,
-    BeforeValidator(lambda v: resolve_kernel(v)),
+    BeforeValidator(lambda v: v if isinstance(v, ComplexKernel) else resolve_kernel(v)),
     PlainSerializer(lambda k: k.pretty_string, return_type=str),
 ]
 
